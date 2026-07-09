@@ -1,29 +1,29 @@
 local TweenService = game:GetService("TweenService")
 local UIS          = game:GetService("UserInputService")
-local Players      = game:GetService("Players")
 local RunService   = game:GetService("RunService")
+local Players      = game:GetService("Players")
 local player       = Players.LocalPlayer
 
--- ANTI-DUPE (srd.luau.coded)
+-- ANTI-DUPE
 do
 	local pg = player:WaitForChild("PlayerGui")
-	local ex = pg:FindFirstChild("srd.luau.codedHubGui")
+	local ex = pg:FindFirstChild("4557HubGui")
 	if ex then ex:Destroy() end
-	if _G["srd.luau.codedRunning"] then
-		_G["srd.luau.codedRunning"] = false
-		if _G["srd.luau.codedConnection"] then
-			_G["srd.luau.codedConnection"]:Disconnect()
-			_G["srd.luau.codedConnection"] = nil
+	if _G["4557Running"] then
+		_G["4557Running"] = false
+		if _G["4557Connection"] then
+			_G["4557Connection"]:Disconnect()
+			_G["4557Connection"] = nil
 		end
 	end
-	_G["srd.luau.codedRunning"] = true
+	_G["4557Running"] = true
 end
 
 local Lib   = {}
 Lib.__index = Lib
 
 local _gui = Instance.new("ScreenGui")
-_gui.Name           = "srd.luau.codedHubGui"
+_gui.Name           = "4557HubGui"
 _gui.ResetOnSpawn   = false
 _gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 _gui.Parent         = player.PlayerGui
@@ -53,8 +53,7 @@ local function _stroke(obj, color, thick)
 end
 
 local function _style(obj)
-	_corner(obj)
-	_stroke(obj)
+	_corner(obj); _stroke(obj)
 end
 
 local function _tween(obj, t, props)
@@ -81,15 +80,22 @@ local function _reposition()
 	end
 	local n = #vis
 	if n == 0 then return end
-	
-	local sc = workspace.CurrentCamera.ViewportSize
-	local startX = (sc.X / 2) - ((n * WIN_W + (n - 1) * WIN_MAR) / 2)
-	local centerY = (sc.Y / 2) - 150
-
+	local cam = workspace.CurrentCamera.ViewportSize
+	local sw, sh = cam.X, cam.Y
+	local pos = {}
+	if n == 1 then
+		pos = { (sw / 2) - (WIN_W / 2) }
+	elseif n == 2 then
+		pos = { WIN_MAR, sw - WIN_W - WIN_MAR }
+	else
+		local gap = math.max((sw - WIN_MAR*2 - WIN_W*n) / (n-1), WIN_MAR)
+		for i = 1, n do pos[i] = WIN_MAR + (i-1)*(WIN_W + gap) end
+	end
 	for i, frame in ipairs(vis) do
-		local x = startX + (i - 1) * (WIN_W + WIN_MAR)
-		local y = math.clamp(centerY, 0, sc.Y - WIN_Y)
-		_tween(frame, 0.4, { Position = UDim2.new(0, x, 0, y) })
+		local x = math.clamp(pos[i] or WIN_MAR, 0, sw - WIN_W)
+		-- Center vertically on screen (falls back to WIN_Y margin if the window is taller than the screen)
+		local y = math.max(WIN_Y, (sh / 2) - (frame.AbsoluteSize.Y / 2))
+		_tween(frame, 0.35, { Position = UDim2.new(0, x, 0, y) })
 	end
 end
 
@@ -98,21 +104,25 @@ function Lib:GetFlag(flag)
 end
 
 function Lib:CreateWindow(title)
+
 	local winData = { shown = false }
 	table.insert(_windows, winData)
 
 	local frame = Instance.new("Frame")
 	frame.Size             = UDim2.new(0, WIN_W, 0, TITLE_H)
-	frame.Position         = UDim2.new(0, (workspace.CurrentCamera.ViewportSize.X / 2) - (WIN_W / 2), 0, WIN_Y)
+	frame.Position = UDim2.new(
+		0, (workspace.CurrentCamera.ViewportSize.X / 2) - (WIN_W / 2),
+		0, (workspace.CurrentCamera.ViewportSize.Y / 2) - (TITLE_H / 2)
+	)
 	frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	frame.ClipsDescendants = true
 	frame.Active           = true
 	frame.Visible          = false
 	frame.ZIndex           = 10
 	frame.Parent           = _gui
-	
-	-- Main window corner rounding (No white stroke on the whole GUI window anymore)
-	_corner(frame, 8)
+	_corner(frame)
+	-- NOTE: no stroke on the whole frame anymore (removes the flat black outline).
+	-- Only the header (titleBar) gets a border, and it's an animated/smooth one (see below).
 	winData.frame = frame
 
 	local titleBar = Instance.new("TextLabel")
@@ -121,23 +131,25 @@ function Lib:CreateWindow(title)
 	titleBar.Font             = Enum.Font.LuckiestGuy
 	titleBar.TextSize         = 16
 	titleBar.TextColor3       = Color3.new(1,1,1)
-	titleBar.BackgroundColor3 = Color3.fromRGB(0,0,0)
+	titleBar.BackgroundColor3 = Color3.fromRGB(16,16,16) -- lighter than the body so the drag handle is visible
 	titleBar.Active           = true
 	titleBar.ZIndex           = 12
 	titleBar.Parent           = frame
-	_corner(titleBar, 8)
-	
-	-- White border ONLY around the header
-	_stroke(titleBar, Color3.fromRGB(255, 255, 255), 1.5)
+	_corner(titleBar)
 
-	-- Smooth Dark Gray Line Below Header
-	local headerLine = Instance.new("Frame")
-	headerLine.Size = UDim2.new(1, 0, 0, 1)
-	headerLine.Position = UDim2.new(0, 0, 1, -1)
-	headerLine.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-	headerLine.BorderSizePixel = 0
-	headerLine.ZIndex = 13
-	headerLine.Parent = titleBar
+	-- Smooth animated border around the HEADER only (not the whole GUI)
+	local headerStroke = Instance.new("UIStroke")
+	headerStroke.Name         = "HeaderGlow"
+	headerStroke.Color        = Color3.fromRGB(255,65,65)
+	headerStroke.Thickness    = 1.3
+	headerStroke.Transparency = 0.35
+	headerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	headerStroke.Parent       = titleBar
+	TweenService:Create(
+		headerStroke,
+		TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+		{ Transparency = 0.85 }
+	):Play()
 
 	local colBtn = Instance.new("TextButton")
 	colBtn.Size               = UDim2.new(0,30,0,30)
@@ -147,33 +159,35 @@ function Lib:CreateWindow(title)
 	colBtn.Font               = Enum.Font.GothamBold
 	colBtn.TextSize           = 20
 	colBtn.TextColor3         = Color3.new(1,1,1)
-	colBtn.ZIndex             = 14
 	colBtn.Parent             = titleBar
 
+	-- FIXED BOTTOM LABEL
 	local bottomLabel = Instance.new("TextLabel")
-	bottomLabel.Size                   = UDim2.new(1,0,0,0)
-	bottomLabel.AnchorPoint            = Vector2.new(0,1)
-	bottomLabel.Position               = UDim2.new(0,0,1,0)
-	bottomLabel.BackgroundColor3       = Color3.fromRGB(0,0,0)
-	bottomLabel.BackgroundTransparency = 0
-	bottomLabel.TextColor3             = Color3.fromRGB(255,255,255)
-	bottomLabel.Font                   = Enum.Font.GothamBlack
-	bottomLabel.TextSize               = 16
-	bottomLabel.Text                   = ""
-	bottomLabel.Visible                = false
-	bottomLabel.ZIndex                 = 11
-	bottomLabel.Parent                 = frame
+bottomLabel.Size                   = UDim2.new(1,0,0,0)
+bottomLabel.AnchorPoint            = Vector2.new(0,1)
+bottomLabel.Position               = UDim2.new(0,0,1,0)
+bottomLabel.BackgroundColor3       = Color3.fromRGB(0,0,0)  -- same as title
+bottomLabel.BackgroundTransparency = 0
+bottomLabel.TextColor3             = Color3.fromRGB(255,255,255)
+bottomLabel.Font                   = Enum.Font.GothamBlack  -- same as title
+bottomLabel.TextSize               = 16                      -- same as title
+bottomLabel.Text                   = ""
+bottomLabel.Visible                = false
+bottomLabel.ZIndex                 = 11
+bottomLabel.Parent                 = frame
 
-	local labelCorner = Instance.new("UICorner")
-	labelCorner.CornerRadius = UDim.new(0,6)
-	labelCorner.Parent       = bottomLabel
+-- Rounded same as GUI
+local labelCorner = Instance.new("UICorner")
+labelCorner.CornerRadius = UDim.new(0,6)
+labelCorner.Parent       = bottomLabel
 
-	local line = Instance.new("Frame")
-	line.Size             = UDim2.new(1,0,0,1)
-	line.Position         = UDim2.new(0,0,0,0)
-	line.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-	line.BorderSizePixel  = 0
-	line.Parent           = bottomLabel
+-- Top divider line
+local line = Instance.new("Frame")
+line.Size             = UDim2.new(1,0,0,1)
+line.Position         = UDim2.new(0,0,0,0)
+line.BackgroundColor3 = Color3.fromRGB(0,0,0)
+line.BorderSizePixel  = 0
+line.Parent           = bottomLabel
 
 	local scrollH = MAX_WIN_H - TITLE_H
 
@@ -185,8 +199,7 @@ function Lib:CreateWindow(title)
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(255,255,255)
 	scroll.CanvasSize           = UDim2.new(0,0,0,0)
 	scroll.AutomaticCanvasSize  = Enum.AutomaticSize.Y
-	scroll.ScrollingDirection   = Enum.ScrollingDirection.Y
-	scroll.ClipsDescendants     = true
+    scroll.ScrollingDirection   = Enum.ScrollingDirection.Y
 	scroll.Parent               = frame
 
 	local layout = Instance.new("UIListLayout")
@@ -209,6 +222,8 @@ function Lib:CreateWindow(title)
 		task.defer(function()
 			contentH = layout.AbsoluteContentSize.Y + 10
 			if collapsed then return end
+			local overflow = (contentH + TITLE_H + labelH) > MAX_WIN_H
+			scroll.ScrollBarThickness = 0
 			local targetH = math.clamp(contentH + TITLE_H + labelH, TITLE_H + 40, MAX_WIN_H)
 			frame.Size = UDim2.new(0, WIN_W, 0, targetH)
 		end)
@@ -217,96 +232,101 @@ function Lib:CreateWindow(title)
 	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
 
 	colBtn.MouseButton1Click:Connect(function()
-		collapsed = not collapsed
-		if collapsed then
-			colBtn.Text = " "
-			_tween(frame, 0.25, { Size = UDim2.new(0, WIN_W, 0, TITLE_H + labelH) })
-		else
-			colBtn.Text = " "
-			local targetH = math.clamp(contentH + TITLE_H + labelH, TITLE_H + 40, MAX_WIN_H)
-			_tween(frame, 0.25, { Size = UDim2.new(0, WIN_W, 0, targetH) })
-		end
-	end)
+    collapsed = not collapsed
+    if collapsed then
+        colBtn.Text = " "
+        -- show title + label only
+        _tween(frame, 0.25, { Size = UDim2.new(0, WIN_W, 0, TITLE_H + labelH) })
+    else
+        colBtn.Text = " "
+        -- show everything
+        local targetH = math.clamp(contentH + TITLE_H + labelH, TITLE_H + 40, MAX_WIN_H)
+        _tween(frame, 0.25, { Size = UDim2.new(0, WIN_W, 0, targetH) })
+    end
+end)
 
-	-- FIXED SMOOTH DRAGGING
 	local dragging  = false
+	local dragInput = nil   -- the exact InputObject (finger/mouse) that started the drag
 	local dragStart = nil
 	local startPos  = nil
-	local activeInputObject = nil
+	local targetPos = nil
 
 	titleBar.InputBegan:Connect(function(i)
-		if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and not dragging then
+		if dragging then return end -- already being dragged by another finger, ignore new touches (mistouch fix)
+		if i.UserInputType == Enum.UserInputType.MouseButton1
+		or i.UserInputType == Enum.UserInputType.Touch then
 			dragging  = true
-			activeInputObject = i
+			dragInput = i
 			dragStart = i.Position
 			startPos  = frame.Position
+			targetPos = frame.Position
 		end
 	end)
 
-	local function endDrag(i)
-		if dragging and i == activeInputObject then
-			dragging = false
-			activeInputObject = nil
+	-- Only the SAME InputObject that began the drag is allowed to move the frame.
+	-- This is what stops a second finger touching elsewhere from hijacking/dragging the GUI.
+	UIS.InputChanged:Connect(function(i)
+		if not dragging or i ~= dragInput then return end
+		if i.UserInputType == Enum.UserInputType.MouseMovement
+		or i.UserInputType == Enum.UserInputType.Touch then
+			local sc    = workspace.CurrentCamera.ViewportSize
+			local delta = i.Position - dragStart
+			local newX  = math.clamp(startPos.X.Offset + delta.X, 0, math.max(0, sc.X - frame.AbsoluteSize.X))
+			local newY  = math.clamp(startPos.Y.Offset + delta.Y, 0, math.max(0, sc.Y - frame.AbsoluteSize.Y))
+			targetPos   = UDim2.new(0, newX, 0, newY)
+		end
+	end)
+
+	UIS.InputEnded:Connect(function(i)
+		if dragging and i == dragInput then
+			dragging  = false
+			dragInput = nil
 			_clampFrame(frame)
 		end
-	end
-
-	titleBar.InputEnded:Connect(endDrag)
-	UIS.InputEnded:Connect(endDrag)
-
-	UIS.InputChanged:Connect(function(i)
-		if dragging and i == activeInputObject then
-			if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
-				local sc    = workspace.CurrentCamera.ViewportSize
-				local delta = i.Position - dragStart
-				local newX  = math.clamp(startPos.X.Offset + delta.X, 0, math.max(0, sc.X - frame.AbsoluteSize.X))
-				local newY  = math.clamp(startPos.Y.Offset + delta.Y, 0, math.max(0, sc.Y - frame.AbsoluteSize.Y))
-				
-				TweenService:Create(frame, TweenInfo.new(0.1, Enum.EasingStyle.Linear), {
-					Position = UDim2.new(0, newX, 0, newY)
-				}):Play()
-			end
-		end
 	end)
 
-	RunService.RenderStepped:Connect(function()
-		if not frame or not frame.Parent or dragging then return end
-		_clampFrame(frame)
+	-- Smooth follow: the frame glides toward targetPos instead of snapping instantly (Smooth Draggable)
+	RunService.RenderStepped:Connect(function(dt)
+		if not dragging or not targetPos then return end
+		local curr = frame.Position
+		local a = 1 - math.exp(-dt * 16) -- frame-rate independent smoothing factor
+		frame.Position = UDim2.new(
+			curr.X.Scale, curr.X.Offset + (targetPos.X.Offset - curr.X.Offset) * a,
+			curr.Y.Scale, curr.Y.Offset + (targetPos.Y.Offset - curr.Y.Offset) * a
+		)
 	end)
 
 	if _loaded then
-		winData.shown = true
-		frame.Visible = true
-		_reposition()
+		winData.shown = true; frame.Visible = true; _reposition()
 	else
 		table.insert(_pendingShow, function()
-			winData.shown = true
-			frame.Visible = true
+			winData.shown = true; frame.Visible = true
 		end)
 	end
 
 	local Win    = {}
 	local _order = 0
-	local function nxt() _order += 1 return _order end
+	local function nxt() _order += 1; return _order end
 
 	function Win:SetTitle(text)    titleBar.Text = string.upper(text or "Window") end
 	function Win:SetPosition(x, y) frame.Position = UDim2.new(0, x, 0, y) end
 
 	function Win:SetLabel(text)
-		labelH               = TITLE_H
-		bottomLabel.Size     = UDim2.new(1,0,0,TITLE_H)
-		bottomLabel.Text     = text or ""
-		bottomLabel.Visible  = true
+    labelH               = TITLE_H  -- same height as title!
+    bottomLabel.Size     = UDim2.new(1,0,0,TITLE_H)
+    bottomLabel.Text     = text or ""
+    bottomLabel.Visible  = true
 
-		bottomLabel.BackgroundTransparency = 1
-		TweenService:Create(bottomLabel,
-			TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-			{ BackgroundTransparency = 0 }
-		):Play()
+    -- Smooth fade in
+    bottomLabel.BackgroundTransparency = 1
+    TweenService:Create(bottomLabel,
+        TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+        { BackgroundTransparency = 0 }
+    ):Play()
 
-		scroll.Size = UDim2.new(1,0,0, MAX_WIN_H - TITLE_H - TITLE_H)
-		updateCanvas()
-	end
+    scroll.Size = UDim2.new(1,0,0, MAX_WIN_H - TITLE_H - TITLE_H)
+    updateCanvas()
+end
 
 	function Win:Destroy()
 		frame:Destroy()
@@ -350,7 +370,7 @@ function Lib:CreateWindow(title)
 		updateCanvas()
 	end
 
-	function Win:AddButton(cfg)
+		function Win:AddButton(cfg)
 		local text     = cfg.text or "Button"
 		local flag     = cfg.flag
 		local callback = cfg.callback
@@ -362,12 +382,12 @@ function Lib:CreateWindow(title)
 		btn.Font             = Enum.Font.GothamBlack
 		btn.TextSize         = 16
 		btn.LayoutOrder      = nxt()
-		btn.TextXAlignment   = Enum.TextXAlignment.Center
+		btn.TextXAlignment   = Enum.TextXAlignment.Center -- Changed to Center
 		btn.Parent           = scroll
 		_style(btn)
 		local bp = Instance.new("UIPadding")
 		bp.PaddingLeft  = UDim.new(0,10)
-		bp.PaddingRight = UDim.new(0,10)
+		bp.PaddingRight = UDim.new(0,10) -- Adjusted padding for centering
 		bp.Parent       = btn
 
 		btn.MouseButton1Click:Connect(function()
@@ -490,13 +510,8 @@ function Lib:CreateWindow(title)
 		knob.BackgroundColor3 = Color3.fromRGB(255, 65, 65)
 		knob.Parent      = bar
 		_corner(knob)
-		
 		if flag then _flags[flag] = val end
-		
-		-- FIXED SWIPING BUG (Locks to precise pointer object)
 		local sliderDrag = false
-		local activeSliderInput = nil
-		
 		local function setPos(pos)
 			pos           = math.clamp(pos,0,1)
 			fill.Size     = UDim2.new(pos,0,1,0)
@@ -507,28 +522,25 @@ function Lib:CreateWindow(title)
 			if callback then pcall(callback, val) end
 		end
 		bar.InputBegan:Connect(function(i)
-			if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and not sliderDrag then
+			if i.UserInputType == Enum.UserInputType.MouseButton1
+			or i.UserInputType == Enum.UserInputType.Touch then
 				sliderDrag = true
-				activeSliderInput = i
 				setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
 			end
 		end)
 		UIS.InputChanged:Connect(function(i)
-			if sliderDrag and i == activeSliderInput then
-				if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
-					setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
-				end
+			if not sliderDrag then return end
+			if i.UserInputType == Enum.UserInputType.MouseMovement
+			or i.UserInputType == Enum.UserInputType.Touch then
+				setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
 			end
 		end)
-		local function endSliderDrag(i)
-			if sliderDrag and i == activeSliderInput then
+		UIS.InputEnded:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.MouseButton1
+			or i.UserInputType == Enum.UserInputType.Touch then
 				sliderDrag = false
-				activeSliderInput = nil
 			end
-		end
-		bar.InputEnded:Connect(endSliderDrag)
-		UIS.InputEnded:Connect(endSliderDrag)
-
+		end)
 		valTxt.FocusLost:Connect(function(enter)
 			if enter then
 				local v = tonumber(valTxt.Text)
@@ -594,24 +606,20 @@ function Lib:CreateWindow(title)
 		arrowLbl.Size               = UDim2.new(0,20,1,0)
 		arrowLbl.Position           = UDim2.new(1,-20,0,0)
 		arrowLbl.BackgroundTransparency = 1
-		arrowLbl.Text               = "▼"
+		arrowLbl.Text               = "â–¼"
 		arrowLbl.TextColor3         = Color3.fromRGB(200,200,200)
 		arrowLbl.Font               = Enum.Font.GothamBlack
-		arrowLbl.TextSize         = 20
+		arrowLbl.TextSize           = 20
 		arrowLbl.TextXAlignment     = Enum.TextXAlignment.Center
 		arrowLbl.Parent             = dropBtn
-		
 		local dropFrame = Instance.new("Frame")
 		dropFrame.Size             = UDim2.new(1,0,0,0)
 		dropFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-		dropFrame.ClipsDescendants = true -- FIXED: Keeps inner items hidden completely until click
+		dropFrame.ClipsDescendants = true
 		dropFrame.Active           = false
 		dropFrame.LayoutOrder      = nxt()
 		dropFrame.Parent           = scroll
-		
-		_corner(dropFrame, 6)
-		_stroke(dropFrame, Color3.fromRGB(45, 45, 45), 1.2)
-
+		_corner(dropFrame)
 		Instance.new("UIListLayout", dropFrame)
 		local open = false
 		if flag then _flags[flag] = selected end
@@ -630,17 +638,16 @@ function Lib:CreateWindow(title)
 				selected        = v
 				selLbl.Text     = v
 				open            = false
-				arrowLbl.Text   = "▼"
+				arrowLbl.Text   = "â–¼"
 				if flag then _flags[flag] = v end
 				_tween(dropFrame, 0.2, { Size = UDim2.new(1,0,0,0) })
-				task.wait(0.21)
-				updateCanvas()
+				task.wait(0.21); updateCanvas()
 				if callback then pcall(callback, v) end
 			end)
 		end
 		dropBtn.MouseButton1Click:Connect(function()
 			open = not open
-			arrowLbl.Text = open and "▲" or "▼"
+			arrowLbl.Text = open and "â–²" or "â–¼"
 			local h = open and (#options * 30) or 0
 			_tween(dropFrame, 0.25, { Size = UDim2.new(1,0,0,h) })
 			task.delay(0.26, updateCanvas)
@@ -648,7 +655,7 @@ function Lib:CreateWindow(title)
 		updateCanvas()
 		local D = {}
 		function D:Get() return selected end
-		function D:Set(v) selected = v selLbl.Text = v if flag then _flags[flag] = v end end
+		function D:Set(v) selected = v; selLbl.Text = v; if flag then _flags[flag] = v end end
 		return D
 	end
 
@@ -659,14 +666,13 @@ function Lib:CreateWindow(title)
 		tabBtn.TextColor3       = Color3.fromRGB(180,180,180)
 		tabBtn.Font             = Enum.Font.GothamBlack
 		tabBtn.TextSize         = 16
-		tabBtn.Text             = "▶  " .. (folderName or "Folder")
+		tabBtn.Text             = "â–¶  " .. (folderName or "Folder")
 		tabBtn.TextXAlignment   = Enum.TextXAlignment.Left
 		tabBtn.LayoutOrder      = nxt()
 		tabBtn.Parent           = scroll
 		_style(tabBtn)
 		local tp = Instance.new("UIPadding")
-		tp.PaddingLeft = UDim.new(0,10)
-		tp.Parent = tabBtn
+		tp.PaddingLeft = UDim.new(0,10); tp.Parent = tabBtn
 
 		local content = Instance.new("Frame")
 		content.Size                   = UDim2.new(1,0,0,0)
@@ -707,16 +713,16 @@ function Lib:CreateWindow(title)
 
 		tabBtn.MouseButton1Click:Connect(function()
 			folderOpen = not folderOpen
-			tabBtn.Text       = (folderOpen and "▼  " or "▶  ") .. (folderName or "Folder")
+			tabBtn.Text       = (folderOpen and "â–¼  " or "â–¶  ") .. (folderName or "Folder")
 			tabBtn.TextColor3 = folderOpen and Color3.fromRGB(255,255,255) or Color3.fromRGB(180,180,180)
 			updateFolder()
 		end)
 
 		local Folder  = {}
 		local _fOrder = 0
-		local function fnxt() _fOrder += 1 return _fOrder end
+		local function fnxt() _fOrder += 1; return _fOrder end
 
-		function Folder:AddButton(cfg)
+		    function Folder:AddButton(cfg)
 			local text     = cfg.text or "Button"
 			local flag     = cfg.flag
 			local callback = cfg.callback
@@ -728,12 +734,12 @@ function Lib:CreateWindow(title)
 			btn.Font             = Enum.Font.GothamBlack
 			btn.TextSize         = 16
 			btn.LayoutOrder      = fnxt()
-			btn.TextXAlignment   = Enum.TextXAlignment.Center
+			btn.TextXAlignment   = Enum.TextXAlignment.Center -- Changed to Center
 			btn.Parent           = content
 			_style(btn)
 			local bp = Instance.new("UIPadding")
 			bp.PaddingLeft  = UDim.new(0,10)
-			bp.PaddingRight = UDim.new(0,10)
+			bp.PaddingRight = UDim.new(0,10) -- Adjusted padding for centering
 			bp.Parent       = btn
 
 			btn.MouseButton1Click:Connect(function()
@@ -856,13 +862,8 @@ function Lib:CreateWindow(title)
 			knob.BackgroundColor3 = Color3.fromRGB(255, 65, 65)
 			knob.Parent      = bar
 			_corner(knob)
-			
 			if flag then _flags[flag] = val end
-			
-			-- FIXED SWIPING BUG INSIDE FOLDER
 			local sliderDrag = false
-			local activeSliderInput = nil
-			
 			local function setPos(pos)
 				pos           = math.clamp(pos,0,1)
 				fill.Size     = UDim2.new(pos,0,1,0)
@@ -873,28 +874,25 @@ function Lib:CreateWindow(title)
 				if callback then pcall(callback, val) end
 			end
 			bar.InputBegan:Connect(function(i)
-				if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and not sliderDrag then
+				if i.UserInputType == Enum.UserInputType.MouseButton1
+				or i.UserInputType == Enum.UserInputType.Touch then
 					sliderDrag = true
-					activeSliderInput = i
 					setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
 				end
 			end)
 			UIS.InputChanged:Connect(function(i)
-				if sliderDrag and i == activeSliderInput then
-					if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
-						setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
-					end
+				if not sliderDrag then return end
+				if i.UserInputType == Enum.UserInputType.MouseMovement
+				or i.UserInputType == Enum.UserInputType.Touch then
+					setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
 				end
 			end)
-			local function endSliderDrag(i)
-				if sliderDrag and i == activeSliderInput then
+			UIS.InputEnded:Connect(function(i)
+				if i.UserInputType == Enum.UserInputType.MouseButton1
+				or i.UserInputType == Enum.UserInputType.Touch then
 					sliderDrag = false
-					activeSliderInput = nil
 				end
-			end
-			bar.InputEnded:Connect(endSliderDrag)
-			UIS.InputEnded:Connect(endSliderDrag)
-
+			end)
 			valTxt.FocusLost:Connect(function(enter)
 				if enter then
 					local v = tonumber(valTxt.Text)
@@ -960,63 +958,76 @@ function Lib:CreateWindow(title)
 			arrowLbl.Size               = UDim2.new(0,20,1,0)
 			arrowLbl.Position           = UDim2.new(1,-20,0,0)
 			arrowLbl.BackgroundTransparency = 1
-			arrowLbl.Text               = "▼"
+			arrowLbl.Text               = "â–¼"
 			arrowLbl.TextColor3         = Color3.fromRGB(200,200,200)
 			arrowLbl.Font               = Enum.Font.GothamBlack
-			arrowLbl.TextSize         = 18
+			arrowLbl.TextSize           = 18
 			arrowLbl.TextXAlignment     = Enum.TextXAlignment.Center
 			arrowLbl.Parent             = dropBtn
-			
 			local dropFrame = Instance.new("Frame")
 			dropFrame.Size             = UDim2.new(1,0,0,0)
 			dropFrame.BackgroundColor3 = Color3.fromRGB(15,15,15)
-			dropFrame.ClipsDescendants = true -- FIXED: Keeps nested items hidden completely until click
+			dropFrame.ClipsDescendants = true
 			dropFrame.LayoutOrder      = fnxt()
 			dropFrame.Parent           = content
-			
-			_corner(dropFrame, 6)
-			_stroke(dropFrame, Color3.fromRGB(45, 45, 45), 1.2)
-
-			Instance.new("UIListLayout", dropFrame)
-			local open = false
+			_corner(dropFrame)
+			local dropLayout = Instance.new("UIListLayout")
+			dropLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			dropLayout.Parent    = dropFrame
+			local open      = false
+			local OPT_H     = 28
+			local LINE_H    = 1
+			local optCount  = #options
+			-- total open height includes a 1px dark gray divider line between each option
+			local openH = (optCount * OPT_H) + math.max(0, optCount - 1) * LINE_H
 			if flag then _flags[flag] = selected end
-			for _, v in ipairs(options) do
+			for idx, v in ipairs(options) do
 				local opt = Instance.new("TextButton")
-				opt.Size             = UDim2.new(1,0,0,28)
+				opt.Size             = UDim2.new(1,0,0,OPT_H)
 				opt.Text             = v
 				opt.BackgroundColor3 = Color3.fromRGB(25,25,25)
 				opt.TextColor3       = Color3.new(1,1,1)
 				opt.Font             = Enum.Font.GothamBlack
 				opt.TextSize         = 13
+				opt.LayoutOrder      = idx * 2
 				opt.Parent           = dropFrame
-				_style(opt)
+				_style(opt) -- rounded corners + smooth border on each option
+
+				if idx < optCount then
+					local divider = Instance.new("Frame")
+					divider.Size             = UDim2.new(1,0,0,LINE_H)
+					divider.BackgroundColor3 = Color3.fromRGB(45,45,45) -- dark gray line between items
+					divider.BorderSizePixel  = 0
+					divider.LayoutOrder      = idx * 2 + 1
+					divider.Parent           = dropFrame
+				end
+
 				opt.MouseButton1Click:Connect(function()
-					selected      = v
-					selLbl.Text   = v
-					open          = false
-					arrowLbl.Text = "▼"
+					selected = v
+					selLbl.Text = v
+					open = false
+					TweenService:Create(arrowLbl, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Rotation = 0 }):Play()
 					if flag then _flags[flag] = v end
-					_tween(dropFrame, 0.2, { Size = UDim2.new(1,0,0,0) })
-					task.wait(0.21)
-					updateFolder()
-					updateCanvas()
+					_tween(dropFrame, 0.22, { Size = UDim2.new(1,0,0,0) })
+					task.wait(0.23)
+					updateFolder(); updateCanvas()
 					if callback then pcall(callback, v) end
 				end)
 			end
 			dropBtn.MouseButton1Click:Connect(function()
 				open = not open
-				arrowLbl.Text = open and "▲" or "▼"
-				local h = open and (#options * 28) or 0
-				_tween(dropFrame, 0.25, { Size = UDim2.new(1,0,0,h) })
-				task.delay(0.26, function()
-					updateFolder()
-					updateCanvas()
+				-- smoothly rotate the arrow instead of instantly swapping the glyph
+				TweenService:Create(arrowLbl, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Rotation = open and 180 or 0 }):Play()
+				local h = open and openH or 0
+				_tween(dropFrame, 0.28, { Size = UDim2.new(1,0,0,h) })
+				task.delay(0.29, function()
+					updateFolder(); updateCanvas()
 				end)
 			end)
 			updateCanvas()
 			local D = {}
 			function D:Get() return selected end
-			function D:Set(v) selected = v selLbl.Text = v if flag then _flags[flag] = v end end
+			function D:Set(v) selected = v; selLbl.Text = v; if flag then _flags[flag] = v end end
 			return D
 		end
 
