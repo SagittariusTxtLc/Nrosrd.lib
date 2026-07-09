@@ -4,7 +4,7 @@ local Players      = game:GetService("Players")
 local RunService   = game:GetService("RunService")
 local player       = Players.LocalPlayer
 
--- ANTI-DUPE (Renamed to srd.luau.coded)
+-- ANTI-DUPE (srd.luau.coded)
 do
 	local pg = player:WaitForChild("PlayerGui")
 	local ex = pg:FindFirstChild("srd.luau.codedHubGui")
@@ -83,7 +83,6 @@ local function _reposition()
 	if n == 0 then return end
 	
 	local sc = workspace.CurrentCamera.ViewportSize
-	-- Center the windows horizontally and vertically relative to the middle screen
 	local startX = (sc.X / 2) - ((n * WIN_W + (n - 1) * WIN_MAR) / 2)
 	local centerY = (sc.Y / 2) - 150
 
@@ -112,9 +111,8 @@ function Lib:CreateWindow(title)
 	frame.ZIndex           = 10
 	frame.Parent           = _gui
 	
-	-- Smooth Rounding & Styled Smooth White Border
+	-- Main window corner rounding (No white stroke on the whole GUI window anymore)
 	_corner(frame, 8)
-	_stroke(frame, Color3.fromRGB(255, 255, 255), 1.5)
 	winData.frame = frame
 
 	local titleBar = Instance.new("TextLabel")
@@ -125,8 +123,12 @@ function Lib:CreateWindow(title)
 	titleBar.TextColor3       = Color3.new(1,1,1)
 	titleBar.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	titleBar.Active           = true
+	titleBar.ZIndex           = 12
 	titleBar.Parent           = frame
 	_corner(titleBar, 8)
+	
+	-- White border ONLY around the header
+	_stroke(titleBar, Color3.fromRGB(255, 255, 255), 1.5)
 
 	-- Smooth Dark Gray Line Below Header
 	local headerLine = Instance.new("Frame")
@@ -134,6 +136,7 @@ function Lib:CreateWindow(title)
 	headerLine.Position = UDim2.new(0, 0, 1, -1)
 	headerLine.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 	headerLine.BorderSizePixel = 0
+	headerLine.ZIndex = 13
 	headerLine.Parent = titleBar
 
 	local colBtn = Instance.new("TextButton")
@@ -144,9 +147,9 @@ function Lib:CreateWindow(title)
 	colBtn.Font               = Enum.Font.GothamBold
 	colBtn.TextSize           = 20
 	colBtn.TextColor3         = Color3.new(1,1,1)
+	colBtn.ZIndex             = 14
 	colBtn.Parent             = titleBar
 
-	-- FIXED BOTTOM LABEL
 	local bottomLabel = Instance.new("TextLabel")
 	bottomLabel.Size                   = UDim2.new(1,0,0,0)
 	bottomLabel.AnchorPoint            = Vector2.new(0,1)
@@ -183,6 +186,7 @@ function Lib:CreateWindow(title)
 	scroll.CanvasSize           = UDim2.new(0,0,0,0)
 	scroll.AutomaticCanvasSize  = Enum.AutomaticSize.Y
 	scroll.ScrollingDirection   = Enum.ScrollingDirection.Y
+	scroll.ClipsDescendants     = true
 	scroll.Parent               = frame
 
 	local layout = Instance.new("UIListLayout")
@@ -224,7 +228,7 @@ function Lib:CreateWindow(title)
 		end
 	end)
 
-	-- FIXED SMOOTH DRAGGING (Locks input pointer ID to resolve multi-touch snaps)
+	-- FIXED SMOOTH DRAGGING
 	local dragging  = false
 	local dragStart = nil
 	local startPos  = nil
@@ -258,7 +262,6 @@ function Lib:CreateWindow(title)
 				local newX  = math.clamp(startPos.X.Offset + delta.X, 0, math.max(0, sc.X - frame.AbsoluteSize.X))
 				local newY  = math.clamp(startPos.Y.Offset + delta.Y, 0, math.max(0, sc.Y - frame.AbsoluteSize.Y))
 				
-				-- Smooth linear follow instead of aggressive raw snapping
 				TweenService:Create(frame, TweenInfo.new(0.1, Enum.EasingStyle.Linear), {
 					Position = UDim2.new(0, newX, 0, newY)
 				}):Play()
@@ -266,7 +269,6 @@ function Lib:CreateWindow(title)
 		end
 	end)
 
-	-- Anti-Out-Of-Screen Guard
 	RunService.RenderStepped:Connect(function()
 		if not frame or not frame.Parent or dragging then return end
 		_clampFrame(frame)
@@ -488,8 +490,13 @@ function Lib:CreateWindow(title)
 		knob.BackgroundColor3 = Color3.fromRGB(255, 65, 65)
 		knob.Parent      = bar
 		_corner(knob)
+		
 		if flag then _flags[flag] = val end
+		
+		-- FIXED SWIPING BUG (Locks to precise pointer object)
 		local sliderDrag = false
+		local activeSliderInput = nil
+		
 		local function setPos(pos)
 			pos           = math.clamp(pos,0,1)
 			fill.Size     = UDim2.new(pos,0,1,0)
@@ -500,25 +507,28 @@ function Lib:CreateWindow(title)
 			if callback then pcall(callback, val) end
 		end
 		bar.InputBegan:Connect(function(i)
-			if i.UserInputType == Enum.UserInputType.MouseButton1
-			or i.UserInputType == Enum.UserInputType.Touch then
+			if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and not sliderDrag then
 				sliderDrag = true
+				activeSliderInput = i
 				setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
 			end
 		end)
 		UIS.InputChanged:Connect(function(i)
-			if not sliderDrag then return end
-			if i.UserInputType == Enum.UserInputType.MouseMovement
-			or i.UserInputType == Enum.UserInputType.Touch then
-				setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
+			if sliderDrag and i == activeSliderInput then
+				if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
+					setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
+				end
 			end
 		end)
-		UIS.InputEnded:Connect(function(i)
-			if i.UserInputType == Enum.UserInputType.MouseButton1
-			or i.UserInputType == Enum.UserInputType.Touch then
+		local function endSliderDrag(i)
+			if sliderDrag and i == activeSliderInput then
 				sliderDrag = false
+				activeSliderInput = nil
 			end
-		end)
+		end
+		bar.InputEnded:Connect(endSliderDrag)
+		UIS.InputEnded:Connect(endSliderDrag)
+
 		valTxt.FocusLost:Connect(function(enter)
 			if enter then
 				local v = tonumber(valTxt.Text)
@@ -587,19 +597,18 @@ function Lib:CreateWindow(title)
 		arrowLbl.Text               = "▼"
 		arrowLbl.TextColor3         = Color3.fromRGB(200,200,200)
 		arrowLbl.Font               = Enum.Font.GothamBlack
-		arrowLbl.TextSize           = 20
+		arrowLbl.TextSize         = 20
 		arrowLbl.TextXAlignment     = Enum.TextXAlignment.Center
 		arrowLbl.Parent             = dropBtn
 		
 		local dropFrame = Instance.new("Frame")
 		dropFrame.Size             = UDim2.new(1,0,0,0)
 		dropFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-		dropFrame.ClipsDescendants = true
+		dropFrame.ClipsDescendants = true -- FIXED: Keeps inner items hidden completely until click
 		dropFrame.Active           = false
 		dropFrame.LayoutOrder      = nxt()
 		dropFrame.Parent           = scroll
 		
-		-- Smooth interior borders & dark gray stroke line for dropdown container
 		_corner(dropFrame, 6)
 		_stroke(dropFrame, Color3.fromRGB(45, 45, 45), 1.2)
 
@@ -847,8 +856,13 @@ function Lib:CreateWindow(title)
 			knob.BackgroundColor3 = Color3.fromRGB(255, 65, 65)
 			knob.Parent      = bar
 			_corner(knob)
+			
 			if flag then _flags[flag] = val end
+			
+			-- FIXED SWIPING BUG INSIDE FOLDER
 			local sliderDrag = false
+			local activeSliderInput = nil
+			
 			local function setPos(pos)
 				pos           = math.clamp(pos,0,1)
 				fill.Size     = UDim2.new(pos,0,1,0)
@@ -859,25 +873,28 @@ function Lib:CreateWindow(title)
 				if callback then pcall(callback, val) end
 			end
 			bar.InputBegan:Connect(function(i)
-				if i.UserInputType == Enum.UserInputType.MouseButton1
-				or i.UserInputType == Enum.UserInputType.Touch then
+				if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and not sliderDrag then
 					sliderDrag = true
+					activeSliderInput = i
 					setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
 				end
 			end)
 			UIS.InputChanged:Connect(function(i)
-				if not sliderDrag then return end
-				if i.UserInputType == Enum.UserInputType.MouseMovement
-				or i.UserInputType == Enum.UserInputType.Touch then
-					setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
+				if sliderDrag and i == activeSliderInput then
+					if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
+						setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
+					end
 				end
 			end)
-			UIS.InputEnded:Connect(function(i)
-				if i.UserInputType == Enum.UserInputType.MouseButton1
-				or i.UserInputType == Enum.UserInputType.Touch then
+			local function endSliderDrag(i)
+				if sliderDrag and i == activeSliderInput then
 					sliderDrag = false
+					activeSliderInput = nil
 				end
-			end)
+			end
+			bar.InputEnded:Connect(endSliderDrag)
+			UIS.InputEnded:Connect(endSliderDrag)
+
 			valTxt.FocusLost:Connect(function(enter)
 				if enter then
 					local v = tonumber(valTxt.Text)
@@ -946,18 +963,17 @@ function Lib:CreateWindow(title)
 			arrowLbl.Text               = "▼"
 			arrowLbl.TextColor3         = Color3.fromRGB(200,200,200)
 			arrowLbl.Font               = Enum.Font.GothamBlack
-			arrowLbl.TextSize           = 18
+			arrowLbl.TextSize         = 18
 			arrowLbl.TextXAlignment     = Enum.TextXAlignment.Center
 			arrowLbl.Parent             = dropBtn
 			
 			local dropFrame = Instance.new("Frame")
 			dropFrame.Size             = UDim2.new(1,0,0,0)
 			dropFrame.BackgroundColor3 = Color3.fromRGB(15,15,15)
-			dropFrame.ClipsDescendants = true
+			dropFrame.ClipsDescendants = true -- FIXED: Keeps nested items hidden completely until click
 			dropFrame.LayoutOrder      = fnxt()
 			dropFrame.Parent           = content
 			
-			-- Smooth interior borders & dark gray stroke line for nested dropdown container
 			_corner(dropFrame, 6)
 			_stroke(dropFrame, Color3.fromRGB(45, 45, 45), 1.2)
 
