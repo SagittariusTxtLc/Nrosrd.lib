@@ -63,8 +63,19 @@ local function _tween(obj, t, props)
 	):Play()
 end
 
+local function _screenSize()
+	-- _gui.AbsoluteSize already accounts for the PC top bar / mobile safe-area inset,
+	-- which is what was causing the "not centered on mobile/PC" issue.
+	local size = _gui.AbsoluteSize
+	if size.X <= 0 or size.Y <= 0 then
+		local cam = workspace.CurrentCamera
+		size = (cam and cam.ViewportSize) or Vector2.new(1280, 720)
+	end
+	return size
+end
+
 local function _clampFrame(frame)
-	local sc  = workspace.CurrentCamera.ViewportSize
+	local sc  = _screenSize()
 	local pos = frame.Position
 	local x   = math.clamp(pos.X.Offset, 0, math.max(0, sc.X - frame.AbsoluteSize.X))
 	local y   = math.clamp(pos.Y.Offset, 0, math.max(0, sc.Y - frame.AbsoluteSize.Y))
@@ -80,8 +91,8 @@ local function _reposition()
 	end
 	local n = #vis
 	if n == 0 then return end
-	local cam = workspace.CurrentCamera.ViewportSize
-	local sw, sh = cam.X, cam.Y
+	local sc = _screenSize()
+	local sw, sh = sc.X, sc.Y
 	local pos = {}
 	if n == 1 then
 		pos = { (sw / 2) - (WIN_W / 2) }
@@ -110,10 +121,10 @@ function Lib:CreateWindow(title)
 
 	local frame = Instance.new("Frame")
 	frame.Size             = UDim2.new(0, WIN_W, 0, TITLE_H)
-	frame.Position = UDim2.new(
-		0, (workspace.CurrentCamera.ViewportSize.X / 2) - (WIN_W / 2),
-		0, (workspace.CurrentCamera.ViewportSize.Y / 2) - (TITLE_H / 2)
-	)
+	do
+		local sc = _screenSize()
+		frame.Position = UDim2.new(0, (sc.X / 2) - (WIN_W / 2), 0, (sc.Y / 2) - (TITLE_H / 2))
+	end
 	frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	frame.ClipsDescendants = true
 	frame.Active           = true
@@ -124,6 +135,16 @@ function Lib:CreateWindow(title)
 	-- NOTE: no stroke on the whole frame anymore (removes the flat black outline).
 	-- Only the header (titleBar) gets a border, and it's an animated/smooth one (see below).
 	winData.frame = frame
+
+	-- Some executors run this script before the GUI has actually rendered once,
+	-- so _gui.AbsoluteSize can briefly read as (0,0) and the center calc above is wrong.
+	-- Re-check one frame later and recenter if the window hasn't been dragged/shown yet.
+	task.defer(function()
+		if not winData.shown then
+			local sc = _screenSize()
+			frame.Position = UDim2.new(0, (sc.X / 2) - (WIN_W / 2), 0, (sc.Y / 2) - (TITLE_H / 2))
+		end
+	end)
 
 	local titleBar = Instance.new("TextLabel")
 	titleBar.Size             = UDim2.new(1,0,0,TITLE_H)
@@ -137,19 +158,14 @@ function Lib:CreateWindow(title)
 	titleBar.Parent           = frame
 	_corner(titleBar)
 
-	-- Smooth animated border around the HEADER only (not the whole GUI)
+	-- Smooth (rounded-corner) border around the HEADER only (not the whole GUI) â€” static, no glow/pulse
 	local headerStroke = Instance.new("UIStroke")
-	headerStroke.Name         = "HeaderGlow"
-	headerStroke.Color        = Color3.fromRGB(255,65,65)
-	headerStroke.Thickness    = 1.3
-	headerStroke.Transparency = 0.35
+	headerStroke.Name         = "HeaderBorder"
+	headerStroke.Color        = Color3.new(1,1,1)
+	headerStroke.Thickness    = 1.2
+	headerStroke.Transparency = 0
 	headerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	headerStroke.Parent       = titleBar
-	TweenService:Create(
-		headerStroke,
-		TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-		{ Transparency = 0.85 }
-	):Play()
 
 	local colBtn = Instance.new("TextButton")
 	colBtn.Size               = UDim2.new(0,30,0,30)
@@ -269,7 +285,7 @@ end)
 		if not dragging or i ~= dragInput then return end
 		if i.UserInputType == Enum.UserInputType.MouseMovement
 		or i.UserInputType == Enum.UserInputType.Touch then
-			local sc    = workspace.CurrentCamera.ViewportSize
+			local sc    = _screenSize()
 			local delta = i.Position - dragStart
 			local newX  = math.clamp(startPos.X.Offset + delta.X, 0, math.max(0, sc.X - frame.AbsoluteSize.X))
 			local newY  = math.clamp(startPos.Y.Offset + delta.Y, 0, math.max(0, sc.Y - frame.AbsoluteSize.Y))
@@ -863,7 +879,8 @@ end
 			knob.Parent      = bar
 			_corner(knob)
 			if flag then _flags[flag] = val end
-			local sliderDrag = false
+			local sliderDrag  = false
+			local sliderInput = nil -- exact finger/mouse InputObject that started the drag
 			local function setPos(pos)
 				pos           = math.clamp(pos,0,1)
 				fill.Size     = UDim2.new(pos,0,1,0)
@@ -874,23 +891,25 @@ end
 				if callback then pcall(callback, val) end
 			end
 			bar.InputBegan:Connect(function(i)
+				if sliderDrag then return end -- ignore other fingers already tracked elsewhere
 				if i.UserInputType == Enum.UserInputType.MouseButton1
 				or i.UserInputType == Enum.UserInputType.Touch then
-					sliderDrag = true
+					sliderDrag  = true
+					sliderInput = i
 					setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
 				end
 			end)
 			UIS.InputChanged:Connect(function(i)
-				if not sliderDrag then return end
+				if not sliderDrag or i ~= sliderInput then return end
 				if i.UserInputType == Enum.UserInputType.MouseMovement
 				or i.UserInputType == Enum.UserInputType.Touch then
 					setPos((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X)
 				end
 			end)
 			UIS.InputEnded:Connect(function(i)
-				if i.UserInputType == Enum.UserInputType.MouseButton1
-				or i.UserInputType == Enum.UserInputType.Touch then
-					sliderDrag = false
+				if sliderDrag and i == sliderInput then
+					sliderDrag  = false
+					sliderInput = nil
 				end
 			end)
 			valTxt.FocusLost:Connect(function(enter)
@@ -972,14 +991,23 @@ end
 			dropFrame.Parent           = content
 			_corner(dropFrame)
 			local dropLayout = Instance.new("UIListLayout")
-			dropLayout.SortOrder = Enum.SortOrder.LayoutOrder
-			dropLayout.Parent    = dropFrame
+			dropLayout.SortOrder  = Enum.SortOrder.LayoutOrder
+			dropLayout.Parent     = dropFrame
+			-- Small inset so each option's border sits inside dropFrame's clip bounds instead of
+			-- getting cut off flush against the edge (this is why the gray border wasn't showing)
+			local dropPad = Instance.new("UIPadding")
+			dropPad.PaddingLeft   = UDim.new(0,3)
+			dropPad.PaddingRight  = UDim.new(0,3)
+			dropPad.PaddingTop    = UDim.new(0,3)
+			dropPad.PaddingBottom = UDim.new(0,3)
+			dropPad.Parent        = dropFrame
 			local open      = false
 			local OPT_H     = 28
 			local LINE_H    = 1
+			local PAD_V     = 6 -- top+bottom UIPadding added above
 			local optCount  = #options
-			-- total open height includes a 1px dark gray divider line between each option
-			local openH = (optCount * OPT_H) + math.max(0, optCount - 1) * LINE_H
+			-- total open height includes a 1px dark gray divider line between each option + the padding inset
+			local openH = (optCount * OPT_H) + math.max(0, optCount - 1) * LINE_H + PAD_V
 			if flag then _flags[flag] = selected end
 			for idx, v in ipairs(options) do
 				local opt = Instance.new("TextButton")
@@ -991,7 +1019,8 @@ end
 				opt.TextSize         = 13
 				opt.LayoutOrder      = idx * 2
 				opt.Parent           = dropFrame
-				_style(opt) -- rounded corners + smooth border on each option
+				_corner(opt)
+				_stroke(opt, Color3.fromRGB(70,70,70), 1) -- clearly visible smooth gray border on each option
 
 				if idx < optCount then
 					local divider = Instance.new("Frame")
