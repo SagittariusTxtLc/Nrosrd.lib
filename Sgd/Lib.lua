@@ -4,7 +4,7 @@ local TweenService = game:GetService("TweenService")
 
 function Library:CreateWindow(title)
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "DynamicSymbolMenuUI"
+    ScreenGui.Name = "PerfectBorderMenuUI"
     ScreenGui.ResetOnSpawn = false
     
     if syn and syn.protect_gui then syn.protect_gui(ScreenGui) end
@@ -14,7 +14,7 @@ function Library:CreateWindow(title)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
     MainFrame.Size = UDim2.new(0, 220, 0, 32)
-    MainFrame.Position = UDim2.new(0.5, -110, 0.5, -150) -- Perfect screen centering on execution
+    MainFrame.Position = UDim2.new(0.5, -110, 0.5, -150) -- Middle screen spawn
     MainFrame.BackgroundColor3 = Color3.fromRGB(185, 185, 185)
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
@@ -25,11 +25,18 @@ function Library:CreateWindow(title)
     MainCorner.CornerRadius = UDim.new(0, 6)
     MainCorner.Parent = MainFrame
 
+    -- Padding to ensure a perfect smooth border around all items inside the grey background
+    local MainPadding = Instance.new("UIPadding")
+    MainPadding.PaddingTop = UDim.new(0, 2)
+    MainPadding.PaddingBottom = UDim.new(0, 2)
+    MainPadding.PaddingLeft = UDim.new(0, 2)
+    MainPadding.PaddingRight = UDim.new(0, 2)
+    MainPadding.Parent = MainFrame
+
     -- Global Header (Dark Blue)
     local MainHeader = Instance.new("Frame")
     MainHeader.Name = "MainHeader"
-    MainHeader.Size = UDim2.new(1, -4, 0, 28)
-    MainHeader.Position = UDim2.new(0, 2, 0, 2)
+    MainHeader.Size = UDim2.new(1, 0, 0, 28)
     MainHeader.BackgroundColor3 = Color3.fromRGB(14, 85, 156)
     MainHeader.BorderSizePixel = 0
     MainHeader.Parent = MainFrame
@@ -47,26 +54,24 @@ function Library:CreateWindow(title)
     MainTitle.TextXAlignment = Enum.TextXAlignment.Left
     MainTitle.Parent = MainHeader
 
-    -- Main Header Toggle Symbol Button
+    -- Right side toggle symbol ("v" for open, "-" for close)
     local MainMinimizeBtn = Instance.new("TextButton")
     MainMinimizeBtn.Size = UDim2.new(0, 25, 1, 0)
     MainMinimizeBtn.Position = UDim2.new(1, -25, 0, 0)
     MainMinimizeBtn.BackgroundTransparency = 1
-    MainMinimizeBtn.Text = "v" -- "v" when open
+    MainMinimizeBtn.Text = "v"
     MainMinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     MainMinimizeBtn.TextSize = 13
     MainMinimizeBtn.Font = Enum.Font.GothamBold
     MainMinimizeBtn.Parent = MainHeader
 
-    -- Elements Scrolling Box
-    local Container = Instance.new("ScrollingFrame")
+    -- Elements Container Box
+    local Container = Instance.new("Frame")
     Container.Name = "ItemsContainer"
-    Container.Size = UDim2.new(1, -4, 1, -34)
-    Container.Position = UDim2.new(0, 2, 0, 32)
+    Container.Size = UDim2.new(1, 0, 0, 0)
+    Container.Position = UDim2.new(0, 0, 0, 31)
     Container.BackgroundTransparency = 1
     Container.BorderSizePixel = 0
-    Container.ScrollBarThickness = 0
-    Container.CanvasSize = UDim2.new(0, 0, 0, 0)
     Container.Parent = MainFrame
 
     local ContainerLayout = Instance.new("UIListLayout")
@@ -74,16 +79,16 @@ function Library:CreateWindow(title)
     ContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
     ContainerLayout.Parent = Container
 
-    -- Core State Variables
+    -- State management variables
     local uiVisible = true
-    local targetExpandedHeight = 34
+    local currentContentHeight = 0
 
-    -- Function to completely fix the auto-resize background bug
+    -- Dynamic calculation to ensure the grey border layout wraps perfectly
     local function RecalculateWindowSize()
+        currentContentHeight = ContainerLayout.AbsoluteContentSize.Y
         if uiVisible then
-            targetExpandedHeight = math.clamp(ContainerLayout.AbsoluteContentSize.Y + 38, 60, 360)
-            Container.Size = UDim2.new(1, -4, 0, targetExpandedHeight - 34)
-            MainFrame.Size = UDim2.new(0, 220, 0, targetExpandedHeight)
+            Container.Size = UDim2.new(1, 0, 0, currentContentHeight)
+            MainFrame.Size = UDim2.new(0, 220, 0, currentContentHeight + 32)
         else
             MainFrame.Size = UDim2.new(0, 220, 0, 32)
         end
@@ -91,7 +96,7 @@ function Library:CreateWindow(title)
 
     ContainerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(RecalculateWindowSize)
 
-    -- Smooth Dragging Logic (Supports Mobile and Desktop Touch/Clicks smoothly)
+    -- Smooth Dragging System (Desktop & Mobile)
     local dragging, dragInput, dragStart, startPos
     MainHeader.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -117,14 +122,14 @@ function Library:CreateWindow(title)
         end
     end)
 
-    -- Window Minimize Symbol Handler
+    -- Toggle minimization handler via symbols
     MainMinimizeBtn.MouseButton1Click:Connect(function()
         uiVisible = not uiVisible
         Container.Visible = uiVisible
         MainMinimizeBtn.Text = uiVisible and "v" or "-"
         
         TweenService:Create(MainFrame, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = uiVisible and UDim2.new(0, 220, 0, targetExpandedHeight) or UDim2.new(0, 220, 0, 32)
+            Size = uiVisible and UDim2.new(0, 220, 0, currentContentHeight + 32) or UDim2.new(0, 220, 0, 32)
         }):Play()
     end)
 
@@ -469,7 +474,6 @@ function Library:CreateWindow(title)
                 local tween = TweenService:Create(ListFrame, TweenInfo.new(0.12), {Size = open and UDim2.new(1, 0, 0, #list * 20) or UDim2.new(1, 0, 0, 0)})
                 tween:Play()
                 
-                -- Keep window size tracking continuous during dynamic dropdown opening sequences
                 local connection
                 connection = ListFrame:GetPropertyChangedSignal("Size"):Connect(RecalculateWindowSize)
                 tween.Completed:Connect(function()
