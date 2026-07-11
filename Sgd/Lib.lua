@@ -4,7 +4,7 @@ local TweenService = game:GetService("TweenService")
 
 function Library:CreateWindow(title)
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SymbolMenuUI"
+    ScreenGui.Name = "DynamicSymbolMenuUI"
     ScreenGui.ResetOnSpawn = false
     
     if syn and syn.protect_gui then syn.protect_gui(ScreenGui) end
@@ -13,11 +13,12 @@ function Library:CreateWindow(title)
     -- Main Container Frame (Grey Background)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 220, 0, 310)
-    MainFrame.Position = UDim2.new(0.5, -110, 0.5, -155) -- Centers exactly on screen
+    MainFrame.Size = UDim2.new(0, 220, 0, 32)
+    MainFrame.Position = UDim2.new(0.5, -110, 0.5, -150) -- Perfect screen centering on execution
     MainFrame.BackgroundColor3 = Color3.fromRGB(185, 185, 185)
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
+    MainFrame.ClipsDescendants = true
     MainFrame.Parent = ScreenGui
 
     local MainCorner = Instance.new("UICorner")
@@ -46,18 +47,18 @@ function Library:CreateWindow(title)
     MainTitle.TextXAlignment = Enum.TextXAlignment.Left
     MainTitle.Parent = MainHeader
 
-    -- Main Header Minimize Symbol Button
+    -- Main Header Toggle Symbol Button
     local MainMinimizeBtn = Instance.new("TextButton")
     MainMinimizeBtn.Size = UDim2.new(0, 25, 1, 0)
     MainMinimizeBtn.Position = UDim2.new(1, -25, 0, 0)
     MainMinimizeBtn.BackgroundTransparency = 1
-    MainMinimizeBtn.Text = "v" -- Starts as open, showing the 'v' layout
+    MainMinimizeBtn.Text = "v" -- "v" when open
     MainMinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     MainMinimizeBtn.TextSize = 13
     MainMinimizeBtn.Font = Enum.Font.GothamBold
     MainMinimizeBtn.Parent = MainHeader
 
-    -- Scrollable Elements Box
+    -- Elements Scrolling Box
     local Container = Instance.new("ScrollingFrame")
     Container.Name = "ItemsContainer"
     Container.Size = UDim2.new(1, -4, 1, -34)
@@ -73,11 +74,24 @@ function Library:CreateWindow(title)
     ContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
     ContainerLayout.Parent = Container
 
-    ContainerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Container.CanvasSize = UDim2.new(0, 0, 0, ContainerLayout.AbsoluteContentSize.Y + 5)
-    end)
+    -- Core State Variables
+    local uiVisible = true
+    local targetExpandedHeight = 34
 
-    -- Smooth Dragging System
+    -- Function to completely fix the auto-resize background bug
+    local function RecalculateWindowSize()
+        if uiVisible then
+            targetExpandedHeight = math.clamp(ContainerLayout.AbsoluteContentSize.Y + 38, 60, 360)
+            Container.Size = UDim2.new(1, -4, 0, targetExpandedHeight - 34)
+            MainFrame.Size = UDim2.new(0, 220, 0, targetExpandedHeight)
+        else
+            MainFrame.Size = UDim2.new(0, 220, 0, 32)
+        end
+    end
+
+    ContainerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(RecalculateWindowSize)
+
+    -- Smooth Dragging Logic (Supports Mobile and Desktop Touch/Clicks smoothly)
     local dragging, dragInput, dragStart, startPos
     MainHeader.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -97,21 +111,20 @@ function Library:CreateWindow(title)
     UIS.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
-            TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            TweenService:Create(MainFrame, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
             }):Play()
         end
     end)
 
-    -- Symbol-Based Minimize Handler
-    local uiVisible = true
+    -- Window Minimize Symbol Handler
     MainMinimizeBtn.MouseButton1Click:Connect(function()
         uiVisible = not uiVisible
         Container.Visible = uiVisible
         MainMinimizeBtn.Text = uiVisible and "v" or "-"
         
-        TweenService:Create(MainFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
-            Size = uiVisible and UDim2.new(0, 220, 0, 310) or UDim2.new(0, 220, 0, 32)
+        TweenService:Create(MainFrame, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = uiVisible and UDim2.new(0, 220, 0, targetExpandedHeight) or UDim2.new(0, 220, 0, 32)
         }):Play()
     end)
 
@@ -160,11 +173,8 @@ function Library:CreateWindow(title)
 
         local sectionVisible = true
         local function updateSectionSize()
-            if sectionVisible then
-                ElementContainer.Size = UDim2.new(1, 0, 0, ElementLayout.AbsoluteContentSize.Y)
-            else
-                ElementContainer.Size = UDim2.new(1, 0, 0, 0)
-            end
+            ElementContainer.Size = UDim2.new(1, 0, 0, sectionVisible and ElementLayout.AbsoluteContentSize.Y or 0)
+            RecalculateWindowSize()
         end
         ElementLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSectionSize)
 
@@ -442,6 +452,7 @@ function Library:CreateWindow(title)
                 Item.MouseButton1Click:Connect(function()
                     DropFrame.TextLabel.Text = choice
                     TweenService:Create(ListFrame, TweenInfo.new(0.1), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+                    RecalculateWindowSize()
                     callback(choice)
                 end)
             end
@@ -455,7 +466,17 @@ function Library:CreateWindow(title)
 
             Trigger.MouseButton1Click:Connect(function()
                 open = not open
-                TweenService:Create(ListFrame, TweenInfo.new(0.12), {Size = open and UDim2.new(1, 0, 0, #list * 20) or UDim2.new(1, 0, 0, 0)}):Play()
+                local tween = TweenService:Create(ListFrame, TweenInfo.new(0.12), {Size = open and UDim2.new(1, 0, 0, #list * 20) or UDim2.new(1, 0, 0, 0)})
+                tween:Play()
+                
+                -- Keep window size tracking continuous during dynamic dropdown opening sequences
+                local connection
+                connection = ListFrame:GetPropertyChangedSignal("Size"):Connect(RecalculateWindowSize)
+                tween.Completed:Connect(function()
+                    connection:Disconnect()
+                    RecalculateWindowSize()
+                end)
+                
                 Chev.Text = open and "^" or "v"
             end)
         end
