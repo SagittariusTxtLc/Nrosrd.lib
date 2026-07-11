@@ -10,11 +10,11 @@ function Library:CreateWindow(title)
     if syn and syn.protect_gui then syn.protect_gui(ScreenGui) end
     ScreenGui.Parent = game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 
-    -- Main Container Frame (Grey Background)
+    -- Main Container Frame (Grey Background Tray)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
     MainFrame.Size = UDim2.new(0, 220, 0, 32)
-    MainFrame.Position = UDim2.new(0.5, -110, 0.5, -150) -- Middle screen spawn
+    MainFrame.Position = UDim2.new(0.5, -110, 0.5, -150)
     MainFrame.BackgroundColor3 = Color3.fromRGB(185, 185, 185)
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
@@ -25,20 +25,21 @@ function Library:CreateWindow(title)
     MainCorner.CornerRadius = UDim.new(0, 6)
     MainCorner.Parent = MainFrame
 
-    -- Padding to ensure a perfect smooth border around all items inside the grey background
+    -- Main structural padding around the inside elements
     local MainPadding = Instance.new("UIPadding")
-    MainPadding.PaddingTop = UDim.new(0, 2)
-    MainPadding.PaddingBottom = UDim.new(0, 2)
-    MainPadding.PaddingLeft = UDim.new(0, 2)
-    MainPadding.PaddingRight = UDim.new(0, 2)
+    MainPadding.PaddingTop = UDim.new(0, 3)
+    MainPadding.PaddingBottom = UDim.new(0, 3)
+    MainPadding.PaddingLeft = UDim.new(0, 3)
+    MainPadding.PaddingRight = UDim.new(0, 3)
     MainPadding.Parent = MainFrame
 
     -- Global Header (Dark Blue)
     local MainHeader = Instance.new("Frame")
     MainHeader.Name = "MainHeader"
-    MainHeader.Size = UDim2.new(1, 0, 0, 28)
+    MainHeader.Size = UDim2.new(1, 0, 0, 26)
     MainHeader.BackgroundColor3 = Color3.fromRGB(14, 85, 156)
     MainHeader.BorderSizePixel = 0
+    MainHeader.LayoutOrder = 0
     MainHeader.Parent = MainFrame
 
     Instance.new("UICorner", MainHeader).CornerRadius = UDim.new(0, 4)
@@ -54,7 +55,7 @@ function Library:CreateWindow(title)
     MainTitle.TextXAlignment = Enum.TextXAlignment.Left
     MainTitle.Parent = MainHeader
 
-    -- Right side toggle symbol ("v" for open, "-" for close)
+    -- Right side toggle symbol button ("v" for open, "-" for close)
     local MainMinimizeBtn = Instance.new("TextButton")
     MainMinimizeBtn.Size = UDim2.new(0, 25, 1, 0)
     MainMinimizeBtn.Position = UDim2.new(1, -25, 0, 0)
@@ -65,11 +66,11 @@ function Library:CreateWindow(title)
     MainMinimizeBtn.Font = Enum.Font.GothamBold
     MainMinimizeBtn.Parent = MainHeader
 
-    -- Elements Container Box
+    -- Elements Container Box (Sits below header inside MainFrame Layout)
     local Container = Instance.new("Frame")
     Container.Name = "ItemsContainer"
     Container.Size = UDim2.new(1, 0, 0, 0)
-    Container.Position = UDim2.new(0, 0, 0, 31)
+    Container.Position = UDim2.new(0, 0, 0, 29)
     Container.BackgroundTransparency = 1
     Container.BorderSizePixel = 0
     Container.Parent = MainFrame
@@ -79,16 +80,25 @@ function Library:CreateWindow(title)
     ContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
     ContainerLayout.Parent = Container
 
-    -- State management variables
-    local uiVisible = true
-    local currentContentHeight = 0
+    -- Layout manager to strictly snap everything into vertical alignment
+    local MainLayout = Instance.new("UIListLayout")
+    MainLayout.Padding = UDim.new(0, 3)
+    MainLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    MainLayout.Parent = MainFrame
 
-    -- Dynamic calculation to ensure the grey border layout wraps perfectly
+    local uiVisible = true
+
+    -- Forces the grey frame to size perfectly around content height + padding margins
     local function RecalculateWindowSize()
-        currentContentHeight = ContainerLayout.AbsoluteContentSize.Y
         if uiVisible then
-            Container.Size = UDim2.new(1, 0, 0, currentContentHeight)
-            MainFrame.Size = UDim2.new(0, 220, 0, currentContentHeight + 32)
+            local itemsHeight = ContainerLayout.AbsoluteContentSize.Y
+            if itemsHeight > 0 then
+                Container.Size = UDim2.new(1, 0, 0, itemsHeight)
+                MainFrame.Size = UDim2.new(0, 220, 0, itemsHeight + 26 + 9)
+            else
+                Container.Size = UDim2.new(1, 0, 0, 0)
+                MainFrame.Size = UDim2.new(0, 220, 0, 32)
+            end
         else
             MainFrame.Size = UDim2.new(0, 220, 0, 32)
         end
@@ -96,7 +106,7 @@ function Library:CreateWindow(title)
 
     ContainerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(RecalculateWindowSize)
 
-    -- Smooth Dragging System (Desktop & Mobile)
+    -- Smooth Dragging System
     local dragging, dragInput, dragStart, startPos
     MainHeader.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -122,14 +132,17 @@ function Library:CreateWindow(title)
         end
     end)
 
-    -- Toggle minimization handler via symbols
+    -- Right-side symbol logic toggle button click handler
     MainMinimizeBtn.MouseButton1Click:Connect(function()
         uiVisible = not uiVisible
         Container.Visible = uiVisible
         MainMinimizeBtn.Text = uiVisible and "v" or "-"
         
+        local itemsHeight = ContainerLayout.AbsoluteContentSize.Y
+        local targetHeight = uiVisible and (itemsHeight + 26 + 9) or 32
+        
         TweenService:Create(MainFrame, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = uiVisible and UDim2.new(0, 220, 0, currentContentHeight + 32) or UDim2.new(0, 220, 0, 32)
+            Size = UDim2.new(0, 220, 0, targetHeight)
         }):Play()
     end)
 
