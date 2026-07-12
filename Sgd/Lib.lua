@@ -10,10 +10,10 @@ function Library:CreateWindow(titleText)
     ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    -- Main Frame (Black, Ultra Smooth 4x Borders, Auto-Sizing Ready)
+    -- Main Frame (Dark Black Body)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 290, 0, 80) -- Starts small, auto-adjusts instantly
+    MainFrame.Size = UDim2.new(0, 290, 0, 80)
     MainFrame.Position = UDim2.new(0.5, -145, 0.5, -70)
     MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
     MainFrame.BorderSizePixel = 0
@@ -23,12 +23,20 @@ function Library:CreateWindow(titleText)
     MainFrame.Parent = ScreenGui
 
     local MainCorner = Instance.new("UICorner")
-    MainCorner.CornerRadius = UDim.new(0, 10) -- 4x Smooth border rounding
+    MainCorner.CornerRadius = UDim.new(0, 10)
     MainCorner.Parent = MainFrame
 
-    -- Title Header Label
+    -- Header Frame (Light Black Color)
+    local HeaderFrame = Instance.new("Frame")
+    HeaderFrame.Name = "HeaderFrame"
+    HeaderFrame.Size = UDim2.new(1, 0, 0, 40)
+    HeaderFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    HeaderFrame.BorderSizePixel = 0
+    HeaderFrame.Parent = MainFrame
+
+    -- Title Label inside Header
     local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, -20, 0, 40)
+    Title.Size = UDim2.new(1, -20, 1, 0)
     Title.Position = UDim2.new(0, 12, 0, 0)
     Title.BackgroundTransparency = 1
     Title.Text = titleText or "UI Window"
@@ -36,12 +44,12 @@ function Library:CreateWindow(titleText)
     Title.TextSize = 15
     Title.Font = Enum.Font.SourceSansBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.Parent = MainFrame
+    Title.Parent = HeaderFrame
 
-    -- Improved Scrolling Frame Container
+    -- Scrolling Container
     local Container = Instance.new("ScrollingFrame")
     Container.Size = UDim2.new(1, -24, 0, 0)
-    Container.Position = UDim2.new(0, 12, 0, 42)
+    Container.Position = UDim2.new(0, 12, 0, 48)
     Container.BackgroundTransparency = 1
     Container.BorderSizePixel = 0
     Container.ScrollBarThickness = 3
@@ -56,22 +64,20 @@ function Library:CreateWindow(titleText)
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
     Layout.Padding = UDim.new(0, 8)
 
-    -- Dynamic Auto-Sizing Engine (Eliminates dead space entirely)
+    -- Auto-Sizing Engine (Caps size at 4 elements max to force scrolling on the 5th)
     local function updateWindowSize()
         local contentHeight = Layout.AbsoluteContentSize.Y
         Container.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
         
-        -- Cap max height so it never goes off mobile screens
-        local maxContainerHeight = 280 
+        local maxContainerHeight = 210 
         local targetContainerHeight = math.min(contentHeight, maxContainerHeight)
         
-        -- Smoothly scale container and background window together
-        TweenService:Create(Container, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        TweenService:Create(Container, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             Size = UDim2.new(1, -24, 0, targetContainerHeight)
         }):Play()
         
-        TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 290, 0, targetContainerHeight + 55)
+        TweenService:Create(MainFrame, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 290, 0, targetContainerHeight + 60)
         }):Play()
     end
 
@@ -177,7 +183,7 @@ function Library:CreateWindow(titleText)
         Switch.MouseButton1Click:Connect(toggle)
     end
 
-    -- SLIDER ELEMENT (Fully Universal Mobile + PC Inputs)
+    -- SLIDER ELEMENT (Fixed Side Padding to Stop Clipping/Cutting Out)
     function Elements:CreateSlider(text, min, max, default, callback)
         callback = callback or function() end
         min = min or 0
@@ -214,9 +220,10 @@ function Library:CreateWindow(titleText)
         BoxCorner.CornerRadius = UDim.new(0, 4)
         BoxCorner.Parent = Box
 
+        -- Track is offset inward by 8 pixels on each side to keep dot completely inside bounds
         local Track = Instance.new("Frame")
-        Track.Size = UDim2.new(1, 0, 0, 5)
-        Track.Position = UDim2.new(0, 0, 0, 30)
+        Track.Size = UDim2.new(1, -16, 0, 5)
+        Track.Position = UDim2.new(0, 8, 0, 32)
         Track.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         Track.Parent = SliderFrame
 
@@ -289,7 +296,7 @@ function Library:CreateWindow(titleText)
         end)
     end
 
-    -- DROP-DOWN ELEMENT (Fires Layout updates to Auto-Resize Window size on state change)
+    -- DROP-DOWN ELEMENT
     function Elements:CreateDropdown(text, list, callback)
         list = list or {}
         callback = callback or function() end
@@ -361,12 +368,11 @@ function Library:CreateWindow(titleText)
             local targetHeight = expanded and (56 + (#list * 30)) or 54
             Symbol.Text = expanded and "-" or "v"
             
-            local dropTween = TweenService:Create(DropdownFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            local dropTween = TweenService:Create(DropdownFrame, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 Size = UDim2.new(1, 0, 0, targetHeight)
             })
             dropTween:Play()
             
-            -- Keep frame layout dynamically updated step-by-step
             dropTween.Completed:Connect(updateWindowSize)
             updateWindowSize()
         end
