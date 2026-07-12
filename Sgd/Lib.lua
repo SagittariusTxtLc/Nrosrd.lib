@@ -1,11 +1,10 @@
--- UILib.lua - Educational UI Library (FIXED)
+-- UILib.lua - Educational UI Library (Module Version)
 local UILib = {}
 
 -- Services
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 -- Main GUI Holder
@@ -13,7 +12,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "UILib_Gui"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Main Frame (Background Black with Smooth Border)
+-- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 380, 0, 500)
@@ -23,7 +22,6 @@ MainFrame.BackgroundTransparency = 0
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
--- Smooth Border (Stroke)
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = MainFrame
@@ -39,32 +37,25 @@ local dragInput, dragStart, startPos
 
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local target = input.Target
+        if target and (target:IsA("TextButton") or target.Name == "SwitchBg" or target.Name == "ToggleBtn") then return end
         dragging = true
         dragStart = input.Position
         startPos = MainFrame.Position
         input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
     end
 end)
 
 MainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
+    if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
@@ -106,34 +97,22 @@ CanvasLayout.Padding = UDim.new(0, 8)
 CanvasLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 CanvasLayout.Parent = ScrollingFrame
 
--- Canvas Updater
 local function UpdateCanvas()
     local count = 0
     for _, child in pairs(ScrollingFrame:GetChildren()) do
-        if child:IsA("Frame") then
-            count = count + 1
-        end
+        if child:IsA("Frame") then count = count + 1 end
     end
     ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, count * 45 + 10)
 end
 
--- Functions
-local function CreateElement(parent, type, props)
-    local element = Instance.new(type)
-    for k, v in pairs(props) do
-        element[k] = v
-    end
-    element.Parent = parent
-    return element
-end
+-- ==================== UI ELEMENTS ====================
 
--- 🔘 BUTTON
 function UILib:Button(text, callback)
-    local ButtonFrame = Instance.new("TextButton") -- CHANGED TO TEXTBUTTON
+    local ButtonFrame = Instance.new("TextButton")
     ButtonFrame.Size = UDim2.new(1, -10, 0, 35)
     ButtonFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     ButtonFrame.BackgroundTransparency = 0
-    BorderSizePixel = 0
+    ButtonFrame.BorderSizePixel = 0
     ButtonFrame.Text = ""
     ButtonFrame.Parent = ScrollingFrame
     
@@ -174,7 +153,6 @@ function UILib:Button(text, callback)
     return ButtonFrame
 end
 
--- 🔄 TOGGLE
 function UILib:Toggle(text, default, callback)
     local ToggleFrame = Instance.new("Frame")
     ToggleFrame.Size = UDim2.new(1, -10, 0, 35)
@@ -198,8 +176,7 @@ function UILib:Toggle(text, default, callback)
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = ToggleFrame
     
-    -- Switch
-    local SwitchBg = Instance.new("TextButton") -- CHANGED TO TEXTBUTTON
+    local SwitchBg = Instance.new("TextButton")
     SwitchBg.Size = UDim2.new(0, 40, 0, 20)
     SwitchBg.Position = UDim2.new(1, -50, 0.5, -10)
     SwitchBg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
@@ -225,14 +202,12 @@ function UILib:Toggle(text, default, callback)
     DotCorner.Parent = SwitchDot
     
     local toggled = default or false
-    
     local function UpdateSwitch()
         local targetPos = toggled and UDim2.new(0, 22, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
         local targetColor = toggled and Color3.fromRGB(0, 180, 255) or Color3.fromRGB(60, 60, 60)
         TweenService:Create(SwitchBg, TweenInfo.new(0.3), {BackgroundColor3 = targetColor}):Play()
         TweenService:Create(SwitchDot, TweenInfo.new(0.3), {Position = targetPos}):Play()
     end
-    
     UpdateSwitch()
     
     SwitchBg.MouseButton1Click:Connect(function()
@@ -240,12 +215,10 @@ function UILib:Toggle(text, default, callback)
         UpdateSwitch()
         callback(toggled)
     end)
-    
     UpdateCanvas()
     return ToggleFrame
 end
 
--- 📊 SLIDER
 function UILib:Slider(name, min, max, default, callback)
     local SliderFrame = Instance.new("Frame")
     SliderFrame.Size = UDim2.new(1, -10, 0, 55)
@@ -258,7 +231,6 @@ function UILib:Slider(name, min, max, default, callback)
     Corner.CornerRadius = UDim.new(0, 6)
     Corner.Parent = SliderFrame
     
-    -- Name Label
     local NameLabel = Instance.new("TextLabel")
     NameLabel.Size = UDim2.new(0.6, 0, 0, 20)
     NameLabel.Position = UDim2.new(0, 15, 0, 5)
@@ -270,7 +242,6 @@ function UILib:Slider(name, min, max, default, callback)
     NameLabel.TextXAlignment = Enum.TextXAlignment.Left
     NameLabel.Parent = SliderFrame
     
-    -- Number Box
     local NumberBox = Instance.new("TextButton")
     NumberBox.Size = UDim2.new(0, 50, 0, 22)
     NumberBox.Position = UDim2.new(1, -60, 0, 4)
@@ -287,7 +258,6 @@ function UILib:Slider(name, min, max, default, callback)
     NumCorner.CornerRadius = UDim.new(0, 4)
     NumCorner.Parent = NumberBox
     
-    -- Slider Bar
     local SliderBar = Instance.new("Frame")
     SliderBar.Size = UDim2.new(1, -30, 0, 4)
     SliderBar.Position = UDim2.new(0, 15, 0, 38)
@@ -300,7 +270,6 @@ function UILib:Slider(name, min, max, default, callback)
     BarCorner.CornerRadius = UDim.new(1, 0)
     BarCorner.Parent = SliderBar
     
-    -- Trail
     local Trail = Instance.new("Frame")
     Trail.Size = UDim2.new(0, 0, 1, 0)
     Trail.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
@@ -312,7 +281,6 @@ function UILib:Slider(name, min, max, default, callback)
     TrailCorner.CornerRadius = UDim.new(1, 0)
     TrailCorner.Parent = Trail
     
-    -- Dot
     local Dot = Instance.new("Frame")
     Dot.Size = UDim2.new(0, 12, 0, 12)
     Dot.Position = UDim2.new(0, -6, 0.5, -6)
@@ -335,15 +303,7 @@ function UILib:Slider(name, min, max, default, callback)
         NumberBox.Text = tostring(math.floor(val))
         callback(val)
     end
-    
     UpdateSlider(value)
-    
-    NumberBox.MouseButton1Click:Connect(function()
-        local newVal = tonumber(game:GetService("GuiService"):PromptUserInput("Enter Value:", tostring(math.floor(value))))
-        if newVal then
-            UpdateSlider(newVal)
-        end
-    end)
     
     local draggingSlider = false
     SliderBar.InputBegan:Connect(function(input)
@@ -353,25 +313,19 @@ function UILib:Slider(name, min, max, default, callback)
             UpdateSlider(min + (max - min) * percent)
         end
     end)
-    
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            draggingSlider = false
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingSlider = false end
     end)
-    
     UserInputService.InputChanged:Connect(function(input)
         if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
             local percent = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
             UpdateSlider(min + (max - min) * percent)
         end
     end)
-    
     UpdateCanvas()
     return SliderFrame
 end
 
--- 📋 DROP-DOWN
 function UILib:DropDown(name, options, callback)
     local DropFrame = Instance.new("Frame")
     DropFrame.Size = UDim2.new(1, -10, 0, 35)
@@ -417,14 +371,10 @@ function UILib:DropDown(name, options, callback)
     DropList.Parent = DropContainer
     
     local expanded = false
-    local selected = nil
-    
     local function UpdateHeight()
         local count = 0
         for _, child in pairs(DropContainer:GetChildren()) do
-            if child:IsA("TextButton") then
-                count = count + 1
-            end
+            if child:IsA("TextButton") then count = count + 1 end
         end
         local targetSize = expanded and UDim2.new(1, 0, 0, count * 37) or UDim2.new(1, 0, 0, 0)
         TweenService:Create(DropContainer, TweenInfo.new(0.3), {Size = targetSize}):Play()
@@ -450,7 +400,6 @@ function UILib:DropDown(name, options, callback)
         OptCorner.Parent = OptionBtn
         
         OptionBtn.MouseButton1Click:Connect(function()
-            selected = option
             NameLabel.Text = name .. ": " .. option
             expanded = false
             UpdateHeight()
@@ -462,7 +411,6 @@ function UILib:DropDown(name, options, callback)
         expanded = not expanded
         UpdateHeight()
     end)
-    
     UpdateCanvas()
     return DropFrame
 end
