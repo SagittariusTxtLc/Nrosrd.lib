@@ -1,4 +1,4 @@
--- UILib.lua - Educational UI Library (Module Version)
+-- UILib.lua - Educational UI Library (MOBILE FIXED)
 local UILib = {}
 
 -- Services
@@ -12,11 +12,11 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "UILib_Gui"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Main Frame
+-- Main Frame (FIXED: Now uses Scale to fit Mobile)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 380, 0, 500)
-MainFrame.Position = UDim2.new(0.5, -190, 0.5, -250)
+MainFrame.Size = UDim2.new(0, 350, 0, 450) -- Kept slightly smaller for mobile
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BackgroundTransparency = 0
 MainFrame.BorderSizePixel = 0
@@ -36,7 +36,7 @@ local dragging = false
 local dragInput, dragStart, startPos
 
 MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         local target = input.Target
         if target and (target:IsA("TextButton") or target.Name == "SwitchBg" or target.Name == "ToggleBtn") then return end
         dragging = true
@@ -49,13 +49,18 @@ MainFrame.InputBegan:Connect(function(input)
 end)
 
 MainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then 
+        dragInput = input 
+    end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
@@ -81,7 +86,7 @@ TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
 TitleLabel.Parent = TitleBar
 
--- Scrolling Frame
+-- Scrolling Frame (FIXED: Clips to fit on mobile)
 local ScrollingFrame = Instance.new("ScrollingFrame")
 ScrollingFrame.Size = UDim2.new(1, -10, 1, -40)
 ScrollingFrame.Position = UDim2.new(0, 5, 0, 35)
@@ -90,6 +95,7 @@ ScrollingFrame.BorderSizePixel = 0
 ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 ScrollingFrame.ScrollBarThickness = 4
 ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+ScrollingFrame.ClipsDescendants = true -- FIX: Prevents dropdowns from going off-screen
 ScrollingFrame.Parent = MainFrame
 
 local CanvasLayout = Instance.new("UIListLayout")
@@ -99,10 +105,14 @@ CanvasLayout.Parent = ScrollingFrame
 
 local function UpdateCanvas()
     local count = 0
+    local totalHeight = 0
     for _, child in pairs(ScrollingFrame:GetChildren()) do
-        if child:IsA("Frame") then count = count + 1 end
+        if child:IsA("Frame") then
+            count = count + 1
+            totalHeight = totalHeight + child.Size.Y.Offset + CanvasLayout.Padding.Offset
+        end
     end
-    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, count * 45 + 10)
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, math.max(totalHeight, 100))
 end
 
 -- ==================== UI ELEMENTS ====================
@@ -307,17 +317,19 @@ function UILib:Slider(name, min, max, default, callback)
     
     local draggingSlider = false
     SliderBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             draggingSlider = true
             local percent = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
             UpdateSlider(min + (max - min) * percent)
         end
     end)
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingSlider = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+            draggingSlider = false 
+        end
     end)
     UserInputService.InputChanged:Connect(function(input)
-        if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if draggingSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local percent = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
             UpdateSlider(min + (max - min) * percent)
         end
