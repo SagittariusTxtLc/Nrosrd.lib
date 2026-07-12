@@ -10,11 +10,11 @@ function Library:CreateWindow(titleText)
     ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    -- Main Frame (Compact & Black)
+    -- Main Frame (Adjusted to be compact and mobile-friendly)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 400)
-    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -200)
+    MainFrame.Size = UDim2.new(0, 290, 0, 240) -- Made more compact to eliminate dead space
+    MainFrame.Position = UDim2.new(0.5, -145, 0.5, -120)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
@@ -32,7 +32,7 @@ function Library:CreateWindow(titleText)
     Title.BackgroundTransparency = 1
     Title.Text = titleText or "UI Window"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.TextSize = 16
+    Title.TextSize = 15
     Title.Font = Enum.Font.SourceSansBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = MainFrame
@@ -93,12 +93,10 @@ function Library:CreateWindow(titleText)
         BSplash.TextXAlignment = Enum.TextXAlignment.Right
         BSplash.Parent = Button
 
-        Button.MouseButton1Click:Connect(function()
-            callback()
-        end)
+        Button.MouseButton1Click:Connect(callback)
     end
 
-    -- TOGGLE ELEMENT (Switch Style)
+    -- TOGGLE ELEMENT
     function Elements:CreateToggle(text, callback)
         callback = callback or function() end
         local toggled = false
@@ -123,7 +121,6 @@ function Library:CreateWindow(titleText)
         TText.TextXAlignment = Enum.TextXAlignment.Left
         TText.Parent = ToggleFrame
 
-        -- Switch Track
         local Switch = Instance.new("TextButton")
         Switch.Size = UDim2.new(0, 40, 0, 20)
         Switch.Position = UDim2.new(1, -50, 0.5, -10)
@@ -135,7 +132,6 @@ function Library:CreateWindow(titleText)
         SCorner.CornerRadius = UDim.new(1, 0)
         SCorner.Parent = Switch
 
-        -- Switch Knob (Dot)
         local Knob = Instance.new("Frame")
         Knob.Size = UDim2.new(0, 16, 0, 16)
         Knob.Position = UDim2.new(0, 2, 0.5, -8)
@@ -146,19 +142,21 @@ function Library:CreateWindow(titleText)
         KCorner.CornerRadius = UDim.new(1, 0)
         KCorner.Parent = Knob
 
-        Switch.MouseButton1Click:Connect(function()
+        local function toggle()
             toggled = not toggled
             local targetPos = toggled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-            local targetColor = toggled and Color3.fromRGB(0, 180, 100) or Color3.fromRGB(45, 45, 45)
+            local targetColor = toggled and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(45, 45, 45)
             
             TweenService:Create(Knob, TweenInfo.new(0.2), {Position = targetPos}):Play()
             TweenService:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
             
             callback(toggled)
-        end)
+        end
+
+        Switch.MouseButton1Click:Connect(toggle)
     end
 
-    -- SLIDER ELEMENT
+    -- SLIDER ELEMENT (Fixed for Mobile Touch + PC Mouse support)
     function Elements:CreateSlider(text, min, max, default, callback)
         callback = callback or function() end
         min = min or 0
@@ -180,7 +178,6 @@ function Library:CreateWindow(titleText)
         SName.TextXAlignment = Enum.TextXAlignment.Left
         SName.Parent = SliderFrame
 
-        -- Clickable/Editable Box
         local Box = Instance.new("TextBox")
         Box.Size = UDim2.new(0, 45, 0, 20)
         Box.Position = UDim2.new(1, -45, 0, 0)
@@ -196,7 +193,6 @@ function Library:CreateWindow(titleText)
         BoxCorner.CornerRadius = UDim.new(0, 4)
         BoxCorner.Parent = Box
 
-        -- Slider Track Bar
         local Track = Instance.new("Frame")
         Track.Size = UDim2.new(1, 0, 0, 6)
         Track.Position = UDim2.new(0, 0, 0, 32)
@@ -207,7 +203,6 @@ function Library:CreateWindow(titleText)
         TrackCorner.CornerRadius = UDim.new(1, 0)
         TrackCorner.Parent = Track
 
-        -- Trail
         local Trail = Instance.new("Frame")
         Trail.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
         Trail.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
@@ -217,10 +212,9 @@ function Library:CreateWindow(titleText)
         TrailCorner.CornerRadius = UDim.new(1, 0)
         TrailCorner.Parent = Trail
 
-        -- Dot (Knob)
         local Dot = Instance.new("ImageButton")
-        Dot.Size = UDim2.new(0, 12, 0, 12)
-        Dot.Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6)
+        Dot.Size = UDim2.new(0, 14, 0, 14)
+        Dot.Position = UDim2.new((default - min) / (max - min), -7, 0.5, -7)
         Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         Dot.Parent = Track
 
@@ -233,33 +227,35 @@ function Library:CreateWindow(titleText)
             local value = math.floor(min + (max - min) * percentage)
             Box.Text = tostring(value)
             Trail.Size = UDim2.new(percentage, 0, 1, 0)
-            Dot.Position = UDim2.new(percentage, -6, 0.5, -6)
+            Dot.Position = UDim2.new(percentage, -7, 0.5, -7)
             callback(value)
         end
 
-        -- Dragging Logic
+        -- Robust Dragging Handling (Supports Mouse and Touch)
         local dragging = false
-        Dot.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-            end
-        end)
 
-        UserInputService.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local function checkInput(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                 local relativeX = input.Position.X - Track.AbsolutePosition.X
                 local percentage = relativeX / Track.AbsoluteSize.X
                 updateSlider(percentage)
             end
+        end
+
+        Dot.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+            end
         end)
 
+        UserInputService.InputChanged:Connect(checkInput)
+
         UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = false
             end
         end)
 
-        -- Manual TextBox Input Update
         Box.FocusLost:Connect(function()
             local num = tonumber(Box.Text)
             if num then
@@ -327,7 +323,6 @@ function Library:CreateWindow(titleText)
         Symbol.Font = Enum.Font.SourceSansBold
         Symbol.Parent = Bar
 
-        -- Options Container
         local OptionsList = Instance.new("Frame")
         OptionsList.Size = UDim2.new(1, 0, 0, #list * 30)
         OptionsList.Position = UDim2.new(0, 0, 0, 55)
@@ -362,7 +357,6 @@ function Library:CreateWindow(titleText)
             end)
         end
 
-        -- Smooth Open/Close Animation
         Bar.MouseButton1Click:Connect(function()
             expanded = not expanded
             local targetHeight = expanded and (55 + (#list * 30)) or 55
