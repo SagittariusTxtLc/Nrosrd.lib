@@ -10,15 +10,15 @@ function Library:CreateWindow(titleText)
     ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    -- Main Frame (Dark Black Body)
+    -- Main Frame (Centered using AnchorPoints to adapt to any screen size)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
     MainFrame.Size = UDim2.new(0, 290, 0, 80)
-    MainFrame.Position = UDim2.new(0.5, -145, 0.5, -70)
+    MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
-    MainFrame.Draggable = true
     MainFrame.ClipsDescendants = true
     MainFrame.Parent = ScreenGui
 
@@ -26,15 +26,27 @@ function Library:CreateWindow(titleText)
     MainCorner.CornerRadius = UDim.new(0, 10)
     MainCorner.Parent = MainFrame
 
-    -- Header Frame (Light Black Color)
+    -- Header Frame (Light Black with dedicated smooth top corners)
     local HeaderFrame = Instance.new("Frame")
     HeaderFrame.Name = "HeaderFrame"
-    HeaderFrame.Size = UDim2.new(1, 0, 0, 40)
-    HeaderFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    HeaderFrame.Size = UDim2.new(1, 0, 0, 42)
+    HeaderFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
     HeaderFrame.BorderSizePixel = 0
     HeaderFrame.Parent = MainFrame
 
-    -- Title Label inside Header
+    local HeaderCorner = Instance.new("UICorner")
+    HeaderCorner.CornerRadius = UDim.new(0, 10)
+    HeaderCorner.Parent = HeaderFrame
+
+    -- Seamless Mask Frame to flatten the bottom corners of the header perfectly
+    local HeaderMask = Instance.new("Frame")
+    HeaderMask.Name = "HeaderMask"
+    HeaderMask.Size = UDim2.new(1, 0, 0, 12)
+    HeaderMask.Position = UDim2.new(0, 0, 1, -12)
+    HeaderMask.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    HeaderMask.BorderSizePixel = 0
+    HeaderMask.Parent = HeaderFrame
+
     local Title = Instance.new("TextLabel")
     Title.Size = UDim2.new(1, -20, 1, 0)
     Title.Position = UDim2.new(0, 12, 0, 0)
@@ -49,7 +61,7 @@ function Library:CreateWindow(titleText)
     -- Scrolling Container
     local Container = Instance.new("ScrollingFrame")
     Container.Size = UDim2.new(1, -24, 0, 0)
-    Container.Position = UDim2.new(0, 12, 0, 48)
+    Container.Position = UDim2.new(0, 12, 0, 50)
     Container.BackgroundTransparency = 1
     Container.BorderSizePixel = 0
     Container.ScrollBarThickness = 3
@@ -64,12 +76,46 @@ function Library:CreateWindow(titleText)
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
     Layout.Padding = UDim.new(0, 8)
 
-    -- Auto-Sizing Engine (Caps size at 4 elements max to force scrolling on the 5th)
+    -- Advanced Anti-Mistouch Dragging Implementation
+    local dragging = false
+    local dragInput = nil
+    local dragStart = nil
+    local startPos = nil
+
+    HeaderFrame.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not dragging then
+            dragging = true
+            dragInput = input
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    dragInput = nil
+                end
+            end)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(
+                startPos.X.Scale, 
+                startPos.X.Offset + delta.X, 
+                startPos.Y.Scale, 
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    -- Auto-Sizing Constraint Engine (Caps layout growth after 4 items to force scrolling)
     local function updateWindowSize()
         local contentHeight = Layout.AbsoluteContentSize.Y
         Container.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
         
-        local maxContainerHeight = 210 
+        local maxContainerHeight = 180 
         local targetContainerHeight = math.min(contentHeight, maxContainerHeight)
         
         TweenService:Create(Container, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
@@ -77,7 +123,7 @@ function Library:CreateWindow(titleText)
         }):Play()
         
         TweenService:Create(MainFrame, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 290, 0, targetContainerHeight + 60)
+            Size = UDim2.new(0, 290, 0, targetContainerHeight + 66)
         }):Play()
     end
 
@@ -183,7 +229,7 @@ function Library:CreateWindow(titleText)
         Switch.MouseButton1Click:Connect(toggle)
     end
 
-    -- SLIDER ELEMENT (Fixed Side Padding to Stop Clipping/Cutting Out)
+    -- SLIDER ELEMENT (Tapping anywhere on track instantly updates value)
     function Elements:CreateSlider(text, min, max, default, callback)
         callback = callback or function() end
         min = min or 0
@@ -220,7 +266,6 @@ function Library:CreateWindow(titleText)
         BoxCorner.CornerRadius = UDim.new(0, 4)
         BoxCorner.Parent = Box
 
-        -- Track is offset inward by 8 pixels on each side to keep dot completely inside bounds
         local Track = Instance.new("Frame")
         Track.Size = UDim2.new(1, -16, 0, 5)
         Track.Position = UDim2.new(0, 8, 0, 32)
@@ -259,27 +304,42 @@ function Library:CreateWindow(titleText)
             callback(value)
         end
 
-        local dragging = false
+        local sliderActive = false
+        local sliderDragInput = nil
 
-        local function handleInput(input)
-            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                local relativeX = input.Position.X - Track.AbsolutePosition.X
-                local percentage = relativeX / Track.AbsoluteSize.X
-                updateSlider(percentage)
-            end
+        local function snapToPosition(input)
+            local relativeX = input.Position.X - Track.AbsolutePosition.X
+            local percentage = relativeX / Track.AbsoluteSize.X
+            updateSlider(percentage)
         end
 
-        Dot.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
+        -- Transparent Action Area to catch touches anywhere across the track height
+        local ActionArea = Instance.new("TextButton")
+        ActionArea.Name = "ActionArea"
+        ActionArea.Size = UDim2.new(1, 0, 0, 24)
+        ActionArea.Position = UDim2.new(0, 0, 0, 22)
+        ActionArea.BackgroundTransparency = 1
+        ActionArea.Text = ""
+        ActionArea.Parent = SliderFrame
+
+        ActionArea.InputBegan:Connect(function(input)
+            if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not sliderActive then
+                sliderActive = true
+                sliderDragInput = input
+                snapToPosition(input)
             end
         end)
 
-        UserInputService.InputChanged:Connect(handleInput)
+        UserInputService.InputChanged:Connect(function(input)
+            if input == sliderDragInput and sliderActive then
+                snapToPosition(input)
+            end
+        end)
 
         UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = false
+            if input == sliderDragInput then
+                sliderActive = false
+                sliderDragInput = nil
             end
         end)
 
