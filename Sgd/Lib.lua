@@ -3,6 +3,7 @@ local TweenService = game:GetService("TweenService")
 
 local Library = {}
 
+-- Smooth Draggable Engine
 local function MakeDraggable(frame)
     local dragging, dragInput, dragStart, startPos
     frame.InputBegan:Connect(function(input)
@@ -27,6 +28,7 @@ local function MakeDraggable(frame)
     end)
 end
 
+-- URL Execution Core
 function Library:ExecuteLink(url)
     if not url or url == "" then return end
     if string.find(url, "github.com") and not string.find(url, "raw.githubusercontent.com") then
@@ -45,19 +47,22 @@ function Library:ExecuteLink(url)
     end
 end
 
+-- UI Window Factory
 function Library:CreateWindow(titleText)
     local ScreenGui = Instance.new("ScreenGui")
     if syn and syn.protect_gui then syn.protect_gui(ScreenGui) end
     ScreenGui.Parent = game:GetService("CoreGui")
     
+    -- Main Frame (Starts compact, automatically expands downward per element)
     local MainFrame = Instance.new("Frame", ScreenGui)
-    MainFrame.Size = UDim2.new(0, 260, 0, 320)
+    MainFrame.Size = UDim2.new(0, 260, 0, 45) -- Base height with just header
     MainFrame.Position = UDim2.new(0.5, -130, 0.5, -160)
     MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
     MainFrame.BorderSizePixel = 0
     MakeDraggable(MainFrame)
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
     
+    -- Header Frame with 4px Top-Only Rounded Corners
     local HeaderFrame = Instance.new("Frame", MainFrame)
     HeaderFrame.Size = UDim2.new(1, 0, 0, 35)
     HeaderFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
@@ -66,6 +71,7 @@ function Library:CreateWindow(titleText)
     local HeaderCorner = Instance.new("UICorner", HeaderFrame)
     HeaderCorner.CornerRadius = UDim.new(0, 4)
     
+    -- Masking panel to flatten bottom corners of the header
     local CornerMask = Instance.new("Frame", HeaderFrame)
     CornerMask.Size = UDim2.new(1, 0, 0, 4)
     CornerMask.Position = UDim2.new(0, 0, 1, -4)
@@ -81,27 +87,28 @@ function Library:CreateWindow(titleText)
     Title.Font = Enum.Font.SourceSansBold
     Title.TextSize = 14
     
-    local Container = Instance.new("ScrollingFrame", MainFrame)
+    -- Container Frame (Clips tightly to content size)
+    local Container = Instance.new("Frame", MainFrame)
     Container.Size = UDim2.new(1, -12, 1, -45)
     Container.Position = UDim2.new(0, 6, 0, 40)
     Container.BackgroundTransparency = 1
-    Container.CanvasSize = UDim2.new(0, 0, 0, 0)
-    Container.ScrollBarThickness = 2
-    Container.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 60)
     
     local Layout = Instance.new("UIListLayout", Container)
     Layout.Padding = UDim.new(0, 5)
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
     
+    -- THE FIX: Dynamically resizes the entire main GUI window so there are zero empty spaces at the bottom
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Container.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y)
+        local contentHeight = Layout.AbsoluteContentSize.Y
+        Container.Size = UDim2.new(1, -12, 0, contentHeight)
+        MainFrame.Size = UDim2.new(0, 260, 0, contentHeight + 48)
     end)
     
     local Elements = {}
     
     function Elements:Button(text, callback)
         local Btn = Instance.new("TextButton", Container)
-        Btn.Size = UDim2.new(1, 0, 0, 26)
+        Btn.Size = UDim2.new(1, 0, 0, 28)
         Btn.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
         Btn.TextColor3 = Color3.fromRGB(225, 225, 225)
         Btn.Text = text
@@ -114,7 +121,7 @@ function Library:CreateWindow(titleText)
     function Elements:Toggle(text, default, callback)
         local Enabled = default or false
         local TglFrame = Instance.new("TextButton", Container)
-        TglFrame.Size = UDim2.new(1, 0, 0, 26)
+        TglFrame.Size = UDim2.new(1, 0, 0, 28)
         TglFrame.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
         TglFrame.Text = "  " .. text
         TglFrame.TextColor3 = Color3.fromRGB(225, 225, 225)
@@ -125,7 +132,7 @@ function Library:CreateWindow(titleText)
         
         local Indicator = Instance.new("Frame", TglFrame)
         Indicator.Size = UDim2.new(0, 12, 0, 12)
-        Indicator.Position = UDim2.new(1, -18, 0, 7)
+        Indicator.Position = UDim2.new(1, -18, 0, 8)
         Indicator.BackgroundColor3 = Enabled and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(50, 50, 50)
         Instance.new("UICorner", Indicator).CornerRadius = UDim.new(0, 3)
         
@@ -138,7 +145,7 @@ function Library:CreateWindow(titleText)
     
     function Elements:Slider(text, min, max, default, callback)
         local SliderFrame = Instance.new("Frame", Container)
-        SliderFrame.Size = UDim2.new(1, 0, 0, 36)
+        SliderFrame.Size = UDim2.new(1, 0, 0, 38)
         SliderFrame.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
         Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 4)
         
@@ -154,7 +161,7 @@ function Library:CreateWindow(titleText)
         
         local Track = Instance.new("TextButton", SliderFrame)
         Track.Size = UDim2.new(1, -12, 0, 4)
-        Track.Position = UDim2.new(0, 6, 0, 24)
+        Track.Position = UDim2.new(0, 6, 0, 26)
         Track.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         Track.Text = ""
         Instance.new("UICorner", Track)
@@ -186,7 +193,7 @@ function Library:CreateWindow(titleText)
     
     function Elements:TextBox(placeholder, callback)
         local Box = Instance.new("TextBox", Container)
-        Box.Size = UDim2.new(1, 0, 0, 26)
+        Box.Size = UDim2.new(1, 0, 0, 28)
         Box.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
         Box.TextColor3 = Color3.fromRGB(230, 230, 230)
         Box.PlaceholderText = placeholder
@@ -204,13 +211,13 @@ function Library:CreateWindow(titleText)
     function Elements:Dropdown(text, options, callback)
         local Expanded = false
         local DropFrame = Instance.new("Frame", Container)
-        DropFrame.Size = UDim2.new(1, 0, 0, 26)
+        DropFrame.Size = UDim2.new(1, 0, 0, 28)
         DropFrame.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
         DropFrame.ClipsDescendants = true
         Instance.new("UICorner", DropFrame).CornerRadius = UDim.new(0, 4)
         
         local MainBtn = Instance.new("TextButton", DropFrame)
-        MainBtn.Size = UDim2.new(1, 0, 0, 26)
+        MainBtn.Size = UDim2.new(1, 0, 0, 28)
         MainBtn.BackgroundTransparency = 1
         MainBtn.Text = "  " .. text
         MainBtn.TextColor3 = Color3.fromRGB(225, 225, 225)
@@ -219,8 +226,8 @@ function Library:CreateWindow(titleText)
         MainBtn.TextSize = 13
         
         local OptList = Instance.new("Frame", DropFrame)
-        OptList.Size = UDim2.new(1, 0, 1, -26)
-        OptList.Position = UDim2.new(0, 0, 0, 26)
+        OptList.Size = UDim2.new(1, 0, 1, -28)
+        OptList.Position = UDim2.new(0, 0, 0, 28)
         OptList.BackgroundTransparency = 1
         
         local OptLayout = Instance.new("UIListLayout", OptList)
@@ -228,7 +235,7 @@ function Library:CreateWindow(titleText)
         
         for _, opt in ipairs(options) do
             local OptBtn = Instance.new("TextButton", OptList)
-            OptBtn.Size = UDim2.new(1, 0, 0, 22)
+            OptBtn.Size = UDim2.new(1, 0, 0, 24)
             OptBtn.BackgroundColor3 = Color3.fromRGB(34, 34, 34)
             OptBtn.Text = opt
             OptBtn.TextColor3 = Color3.fromRGB(195, 195, 195)
@@ -239,14 +246,14 @@ function Library:CreateWindow(titleText)
             OptBtn.MouseButton1Click:Connect(function()
                 MainBtn.Text = "  " .. text .. " (" .. opt .. ")"
                 Expanded = false
-                TweenService:Create(DropFrame, TweenInfo.new(0.10), {Size = UDim2.new(1, 0, 0, 26)}):Play()
+                TweenService:Create(DropFrame, TweenInfo.new(0.10), {Size = UDim2.new(1, 0, 0, 28)}):Play()
                 callback(opt)
             end)
         end
         
         MainBtn.MouseButton1Click:Connect(function()
             Expanded = not Expanded
-            local targetHeight = Expanded and (26 + (#options * 24)) or 26
+            local targetHeight = Expanded and (28 + (#options * 26)) or 28
             TweenService:Create(DropFrame, TweenInfo.new(0.10), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
         end)
     end
