@@ -3,7 +3,7 @@ local TweenService = game:GetService("TweenService")
 
 local Library = {}
 
--- Smooth Draggable Engine
+-- Draggable Engine
 local function MakeDraggable(frame)
     local dragging, dragInput, dragStart, startPos
     frame.InputBegan:Connect(function(input)
@@ -28,11 +28,11 @@ local function MakeDraggable(frame)
     end)
 end
 
--- Helper function to generate standardized item containers
+-- Item Container Factory (Uniform background and sharp border stroke)
 local function CreateItemContainer(parent, height)
     local ContainerFrame = Instance.new("Frame", parent)
     ContainerFrame.Size = UDim2.new(1, 0, 0, height)
-    ContainerFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Dark Gray
+    ContainerFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     ContainerFrame.BorderSizePixel = 0
     
     local Corner = Instance.new("UICorner", ContainerFrame)
@@ -40,19 +40,17 @@ local function CreateItemContainer(parent, height)
     
     local Stroke = Instance.new("UIStroke", ContainerFrame)
     Stroke.Thickness = 1
-    Stroke.Color = Color3.fromRGB(45, 45, 45) -- Outline Border
+    Stroke.Color = Color3.fromRGB(45, 45, 45)
     Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     
     return ContainerFrame
 end
 
--- UI Window Factory
 function Library:CreateWindow(titleText)
     local ScreenGui = Instance.new("ScreenGui")
     if syn and syn.protect_gui then syn.protect_gui(ScreenGui) end
     ScreenGui.Parent = game:GetService("CoreGui")
     
-    -- Main Frame (Fixed bounding shape to stop elements from breaking out of bottom)
     local MainFrame = Instance.new("Frame", ScreenGui)
     MainFrame.Size = UDim2.new(0, 260, 0, 340)
     MainFrame.Position = UDim2.new(0.5, -130, 0.5, -170)
@@ -61,7 +59,6 @@ function Library:CreateWindow(titleText)
     MakeDraggable(MainFrame)
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
     
-    -- Header Frame with 4px Top-Only Rounded Corners
     local HeaderFrame = Instance.new("Frame", MainFrame)
     HeaderFrame.Size = UDim2.new(1, 0, 0, 35)
     HeaderFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
@@ -82,10 +79,10 @@ function Library:CreateWindow(titleText)
     Title.Text = "  " .. titleText
     Title.TextColor3 = Color3.fromRGB(245, 245, 245)
     Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextYAlignment = Enum.TextYAlignment.Center
     Title.Font = Enum.Font.SourceSansBold
     Title.TextSize = 14
     
-    -- Fixed Scrolling Container (Adapts perfectly to element lists)
     local Container = Instance.new("ScrollingFrame", MainFrame)
     Container.Size = UDim2.new(1, -16, 1, -47)
     Container.Position = UDim2.new(0, 8, 0, 41)
@@ -115,6 +112,7 @@ function Library:CreateWindow(titleText)
         Btn.Text = text
         Btn.Font = Enum.Font.SourceSans
         Btn.TextSize = 13
+        Btn.TextYAlignment = Enum.TextYAlignment.Center
         
         Btn.MouseButton1Click:Connect(callback)
     end
@@ -131,10 +129,11 @@ function Library:CreateWindow(titleText)
         TglBtn.Font = Enum.Font.SourceSans
         TglBtn.TextSize = 13
         TglBtn.TextXAlignment = Enum.TextXAlignment.Left
+        TglBtn.TextYAlignment = Enum.TextYAlignment.Center
         
         local Indicator = Instance.new("Frame", Item)
         Indicator.Size = UDim2.new(0, 12, 0, 12)
-        Indicator.Position = UDim2.new(1, -20, 0, 10)
+        Indicator.Position = UDim2.new(1, -20, 0.5, -6) -- Absolute Center Anchor
         Indicator.BackgroundColor3 = Enabled and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(60, 60, 60)
         Instance.new("UICorner", Indicator).CornerRadius = UDim.new(0, 3)
         
@@ -155,6 +154,7 @@ function Library:CreateWindow(titleText)
         Label.Text = text .. ": " .. default
         Label.TextColor3 = Color3.fromRGB(220, 220, 220)
         Label.TextXAlignment = Enum.TextXAlignment.Left
+        Label.TextYAlignment = Enum.TextYAlignment.Center
         Label.Font = Enum.Font.SourceSans
         Label.TextSize = 12
         
@@ -203,6 +203,7 @@ function Library:CreateWindow(titleText)
         Box.Text = ""
         Box.Font = Enum.Font.SourceSans
         Box.TextSize = 13
+        Box.TextYAlignment = Enum.TextYAlignment.Center
         
         Box.FocusLost:Connect(function(enterPressed)
             callback(Box.Text, enterPressed)
@@ -220,6 +221,7 @@ function Library:CreateWindow(titleText)
         MainBtn.Text = "  " .. text
         MainBtn.TextColor3 = Color3.fromRGB(230, 230, 230)
         MainBtn.TextXAlignment = Enum.TextXAlignment.Left
+        MainBtn.TextYAlignment = Enum.TextYAlignment.Center
         MainBtn.Font = Enum.Font.SourceSans
         MainBtn.TextSize = 13
         
@@ -239,6 +241,7 @@ function Library:CreateWindow(titleText)
             OptBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
             OptBtn.Font = Enum.Font.SourceSans
             OptBtn.TextSize = 12
+            OptBtn.TextYAlignment = Enum.TextYAlignment.Center
             Instance.new("UICorner", OptBtn).CornerRadius = UDim.new(0, 3)
             
             local OptStroke = Instance.new("UIStroke", OptBtn)
