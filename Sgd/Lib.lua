@@ -5,25 +5,9 @@ makefolder("edge_ui_library")
 local players = game:GetService("Players")
 local tween_service = game:GetService("TweenService")
 local user_input_service = game:GetService("UserInputService")
-local http_service = game:GetService('HttpService')
 local core_gui = game:GetService("CoreGui")
 
 local local_player = players.LocalPlayer
-local mouse = local_player:GetMouse()
-
--- HARDCODED UPDATED COLORS (No more manual configuration needed)
-getgenv().color_scheme = {
-    dark_color = Color3.fromRGB(20, 20, 20),           -- Header GUI Black
-    dark_hover_color = Color3.fromRGB(30, 30, 30),     -- Header Hover
-    background_color = Color3.fromRGB(45, 45, 45),     -- Main GUI Background Gray
-    section_background_color = Color3.fromRGB(35, 35, 35), -- Sections Dark Gray
-    misc_elements_color = Color3.fromRGB(55, 55, 55),  -- Outlines / Borders Gray
-    elements_color = Color3.fromRGB(40, 40, 40),       -- Interactive elements Background
-    elements_hover_color = Color3.fromRGB(50, 50, 50), -- Element Hover
-    enabled_color = Color3.fromRGB(0, 150, 255),       -- Enabled Toggle/Accent (Clean Blue)
-    enabled_hover_color = Color3.fromRGB(0, 120, 220),
-    scroll_bar_color = Color3.fromRGB(80, 80, 80)
-}
 
 local library = {}
 
@@ -50,7 +34,7 @@ function library.new_window(title_text)
 
 	main.Name = "main"
 	main.Parent = edge_ui_library
-	main.BackgroundColor3 = getgenv().color_scheme.background_color
+	main.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Main GUI Background Gray
 	main.Position = UDim2.new(0.5, -275, 0.5, -175)
 	main.Size = UDim2.new(0, 550, 0, 350)
 
@@ -59,14 +43,14 @@ function library.new_window(title_text)
 
 	header.Name = "header"
 	header.Parent = main
-	header.BackgroundColor3 = getgenv().color_scheme.dark_color
+	header.BackgroundColor3 = Color3.fromRGB(20, 20, 20) -- Header GUI Black
 	header.Size = UDim2.new(1, 0, 0, 30)
 
 	UICorner_2.CornerRadius = UDim.new(0, 6)
 	UICorner_2.Parent = header
 
 	Frame.Parent = header
-	Frame.BackgroundColor3 = getgenv().color_scheme.dark_color
+	Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20) -- Header GUI Black
 	Frame.BorderSizePixel = 0
 	Frame.Position = UDim2.new(0, 0, 1, -5)
 	Frame.Size = UDim2.new(1, 0, 0, 5)
@@ -105,7 +89,7 @@ function library.new_window(title_text)
 
 	container.Name = "container"
 	container.Parent = main
-	container.BackgroundColor3 = getgenv().color_scheme.background_color
+	container.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Main GUI Background Gray
 	container.Position = UDim2.new(0, 140, 0, 30)
 	container.Size = UDim2.new(1, -140, 1, -30)
 
@@ -113,20 +97,20 @@ function library.new_window(title_text)
 	UICorner_3.Parent = container
 
 	Frame_2.Parent = container
-	Frame_2.BackgroundColor3 = getgenv().color_scheme.background_color
+	Frame_2.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Main GUI Background Gray
 	Frame_2.BorderSizePixel = 0
 	Frame_2.Size = UDim2.new(0, 5, 1, 0)
 
 	tabs.Name = "tabs"
 	tabs.Parent = main
 	tabs.Active = true
-	tabs.BackgroundColor3 = getgenv().color_scheme.dark_color
+	tabs.BackgroundColor3 = Color3.fromRGB(20, 20, 20) -- Header/Sidebar Black
 	tabs.BorderSizePixel = 0
 	tabs.Position = UDim2.new(0, 0, 0, 30)
 	tabs.Size = UDim2.new(0, 135, 1, -30)
 	tabs.CanvasSize = UDim2.new(0, 0, 0, 0)
 	tabs.ScrollBarThickness = 2
-	tabs.ScrollBarImageColor3 = getgenv().color_scheme.scroll_bar_color
+	tabs.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
 
 	UIListLayout.Parent = tabs
 	UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -136,7 +120,7 @@ function library.new_window(title_text)
 	UIPadding.Parent = tabs
 	UIPadding.PaddingTop = UDim.new(0, 5)
 
-	-- FIX: Optimized non-freezing Draggable system
+	-- Non-freezing Draggable System Connection
 	local dragging, dragInput, dragStart, startPos
 	header.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -184,7 +168,7 @@ function library.new_window(title_text)
 
 		button.Name = "button"
 		button.Parent = tabs
-		button.BackgroundColor3 = getgenv().color_scheme.dark_color
+		button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 		button.BorderSizePixel = 0
 		button.Size = UDim2.new(1, -10, 0, 30)
 		button.Font = Enum.Font.SourceSansSemibold
@@ -199,13 +183,13 @@ function library.new_window(title_text)
 		tab.Name = "tab"
 		tab.Parent = container
 		tab.Active = true
-		tab.BackgroundColor3 = getgenv().color_scheme.background_color
+		tab.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 		tab.BorderSizePixel = 0
 		tab.Size = UDim2.new(1, 0, 1, 0)
 		tab.Visible = false
 		tab.CanvasSize = UDim2.new(0, 0, 0, 0)
 		tab.ScrollBarThickness = 4
-		tab.ScrollBarImageColor3 = getgenv().color_scheme.scroll_bar_color
+		tab.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
 
 		UIListLayout.Parent = tab
 		UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -216,41 +200,36 @@ function library.new_window(title_text)
 		UIPadding.PaddingTop = UDim.new(0, 10)
 		UIPadding.PaddingBottom = UDim.new(0, 10)
 
-		local function update_canvas_size()
+		UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 			tab.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 20)
-		end
-		UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(update_canvas_size)
+		end)
 
 		if #container:GetChildren() == 2 then
 			tab.Visible = true
-			button.BackgroundColor3 = getgenv().color_scheme.elements_color
+			button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 		end
 
 		button.MouseEnter:Connect(function()
 			if not tab.Visible then
-				tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = getgenv().color_scheme.dark_hover_color}):Play()
+				tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
 			end
 		end)
 
 		button.MouseLeave:Connect(function()
 			if not tab.Visible then
-				tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = getgenv().color_scheme.dark_color}):Play()
+				tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(20, 20, 20)}):Play()
 			end
 		end)
 
 		button.MouseButton1Click:Connect(function()
 			for _, v in pairs(container:GetChildren()) do
-				if v:IsA("ScrollingFrame") then
-					v.Visible = false
-				end
+				if v:IsA("ScrollingFrame") then v.Visible = false end
 			end
 			for _, v in pairs(tabs:GetChildren()) do
-				if v:IsA("TextButton") then
-					v.BackgroundColor3 = getgenv().color_scheme.dark_color
-				end
+				if v:IsA("TextButton") then v.BackgroundColor3 = Color3.fromRGB(20, 20, 20) end
 			end
 			tab.Visible = true
-			button.BackgroundColor3 = getgenv().color_scheme.elements_color
+			button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 		end)
 
 		local sections_table = {}
@@ -264,7 +243,7 @@ function library.new_window(title_text)
 
 			section.Name = "section"
 			section.Parent = tab
-			section.BackgroundColor3 = getgenv().color_scheme.section_background_color
+			section.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Sections Dark Gray
 			section.Size = UDim2.new(1, -20, 0, 40)
 
 			UICorner.CornerRadius = UDim.new(0, 6)
@@ -292,14 +271,13 @@ function library.new_window(title_text)
 
 			line.Name = "line"
 			line.Parent = section
-			line.BackgroundColor3 = getgenv().color_scheme.misc_elements_color
+			line.BackgroundColor3 = Color3.fromRGB(50, 50, 50) -- Gray Outlines
 			line.BorderSizePixel = 0
 			line.Size = UDim2.new(1, -20, 0, 1)
 
-			local function update_section_size()
+			UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 				section.Size = UDim2.new(1, -20, 0, UIListLayout.AbsoluteContentSize.Y + 15)
-			end
-			UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(update_section_size)
+			end)
 
 			local elements_table = {}
 
@@ -311,7 +289,7 @@ function library.new_window(title_text)
 
 				button.Name = "button"
 				button.Parent = section
-				button.BackgroundColor3 = getgenv().color_scheme.elements_color
+				button.BackgroundColor3 = Color3.fromRGB(35, 35, 35) -- Interactive elements Background
 				button.Size = UDim2.new(1, -20, 0, 30)
 				button.Font = Enum.Font.SourceSansSemibold
 				button.Text = button_text or "Button"
@@ -323,15 +301,15 @@ function library.new_window(title_text)
 				UICorner.Parent = button
 
 				UIStroke.Parent = button
-				UIStroke.Color = getgenv().color_scheme.misc_elements_color
+				UIStroke.Color = Color3.fromRGB(50, 50, 50) -- Gray Outlines
 				UIStroke.Thickness = 1
 				UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 				button.MouseEnter:Connect(function()
-					tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = getgenv().color_scheme.elements_hover_color}):Play()
+					tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(55, 55, 55)}):Play()
 				end)
 				button.MouseLeave:Connect(function()
-					tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = getgenv().color_scheme.elements_color}):Play()
+					tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
 				end)
 				button.MouseButton1Click:Connect(callback)
 			end
@@ -347,14 +325,14 @@ function library.new_window(title_text)
 
 				toggle.Name = "toggle"
 				toggle.Parent = section
-				toggle.BackgroundColor3 = getgenv().color_scheme.elements_color
+				toggle.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 				toggle.Size = UDim2.new(1, -20, 0, 30)
 
 				UICorner.CornerRadius = UDim.new(0, 4)
 				UICorner.Parent = toggle
 
 				UIStroke.Parent = toggle
-				UIStroke.Color = getgenv().color_scheme.misc_elements_color
+				UIStroke.Color = Color3.fromRGB(50, 50, 50)
 				UIStroke.Thickness = 1
 
 				title.Name = "title"
@@ -371,13 +349,11 @@ function library.new_window(title_text)
 
 				button.Name = "button"
 				button.Parent = toggle
-				button.BackgroundColor3 = getgenv().color_scheme.dark_color
+				button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 				button.Position = UDim2.new(1, -30, 0, 5)
 				button.Size = UDim2.new(0, 20, 0, 20)
 				button.Font = Enum.Font.SourceSans
 				button.Text = ""
-				button.TextColor3 = Color3.fromRGB(0, 0, 0)
-				button.TextSize = 14.000
 				button.AutoButtonColor = false
 
 				UICorner_2.CornerRadius = UDim.new(0, 4)
@@ -386,7 +362,7 @@ function library.new_window(title_text)
 				local enabled = false
 				button.MouseButton1Click:Connect(function()
 					enabled = not enabled
-					local target_color = enabled and getgenv().color_scheme.enabled_color or getgenv().color_scheme.dark_color
+					local target_color = enabled and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(20, 20, 20)
 					tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = target_color}):Play()
 					callback(enabled)
 				end)
@@ -403,14 +379,14 @@ function library.new_window(title_text)
 
 				text_box.Name = "text_box"
 				text_box.Parent = section
-				text_box.BackgroundColor3 = getgenv().color_scheme.elements_color
+				text_box.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 				text_box.Size = UDim2.new(1, -20, 0, 30)
 
 				UICorner.CornerRadius = UDim.new(0, 4)
 				UICorner.Parent = text_box
 
 				UIStroke.Parent = text_box
-				UIStroke.Color = getgenv().color_scheme.misc_elements_color
+				UIStroke.Color = Color3.fromRGB(50, 50, 50)
 				UIStroke.Thickness = 1
 
 				title.Name = "title"
@@ -426,7 +402,7 @@ function library.new_window(title_text)
 				title.TextXAlignment = Enum.TextXAlignment.Left
 
 				TextBox.Parent = text_box
-				TextBox.BackgroundColor3 = getgenv().color_scheme.dark_color
+				TextBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 				TextBox.Position = UDim2.new(1, -110, 0, 5)
 				TextBox.Size = UDim2.new(0, 100, 0, 20)
 				TextBox.Font = Enum.Font.SourceSansSemibold
@@ -439,9 +415,7 @@ function library.new_window(title_text)
 				UICorner_2.Parent = TextBox
 
 				TextBox.FocusLost:Connect(function(enterPressed)
-					if enterPressed then
-						callback(TextBox.Text)
-					end
+					if enterPressed then callback(TextBox.Text) end
 				end)
 			end
 
@@ -457,14 +431,14 @@ function library.new_window(title_text)
 
 				key_bind.Name = "key_bind"
 				key_bind.Parent = section
-				key_bind.BackgroundColor3 = getgenv().color_scheme.elements_color
+				key_bind.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 				key_bind.Size = UDim2.new(1, -20, 0, 30)
 
 				UICorner.CornerRadius = UDim.new(0, 4)
 				UICorner.Parent = key_bind
 
 				UIStroke.Parent = key_bind
-				UIStroke.Color = getgenv().color_scheme.misc_elements_color
+				UIStroke.Color = Color3.fromRGB(50, 50, 50)
 				UIStroke.Thickness = 1
 
 				title.Name = "title"
@@ -481,7 +455,7 @@ function library.new_window(title_text)
 
 				button.Name = "button"
 				button.Parent = key_bind
-				button.BackgroundColor3 = getgenv().color_scheme.dark_color
+				button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 				button.Position = UDim2.new(1, -110, 0, 5)
 				button.Size = UDim2.new(0, 100, 0, 20)
 				button.Font = Enum.Font.SourceSansSemibold
@@ -491,10 +465,6 @@ function library.new_window(title_text)
 
 				UICorner_2.CornerRadius = UDim.new(0, 4)
 				UICorner_2.Parent = button
-
-				local alignment = Instance.new("UITextSizeConstraint")
-				alignment.MaxTextSize = 14
-				alignment.Parent = button
 
 				local connection
 				button.MouseButton1Click:Connect(function()
@@ -509,10 +479,8 @@ function library.new_window(title_text)
 					end)
 				end)
 
-				user_input_service.InputBegan:Connect(function(input, gameProcessedEvent)
-					if not gameProcessedEvent and old_key and input.KeyCode == old_key then
-						callback(old_key)
-					end
+				user_input_service.InputBegan:Connect(function(input, gpe)
+					if not gpe and old_key and input.KeyCode == old_key then callback(old_key) end
 				end)
 			end
 
@@ -530,14 +498,14 @@ function library.new_window(title_text)
 
 				slider.Name = "slider"
 				slider.Parent = section
-				slider.BackgroundColor3 = getgenv().color_scheme.elements_color
+				slider.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 				slider.Size = UDim2.new(1, -20, 0, 50)
 
 				UICorner.CornerRadius = UDim.new(0, 4)
 				UICorner.Parent = slider
 
 				UIStroke.Parent = slider
-				UIStroke.Color = getgenv().color_scheme.misc_elements_color
+				UIStroke.Color = Color3.fromRGB(50, 50, 50)
 				UIStroke.Thickness = 1
 
 				title.Name = "title"
@@ -566,7 +534,7 @@ function library.new_window(title_text)
 
 				slider_bar.Name = "slider_bar"
 				slider_bar.Parent = slider
-				slider_bar.BackgroundColor3 = getgenv().color_scheme.dark_color
+				slider_bar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 				slider_bar.Position = UDim2.new(0, 10, 0, 30)
 				slider_bar.Size = UDim2.new(1, -20, 0, 10)
 
@@ -575,7 +543,7 @@ function library.new_window(title_text)
 
 				slider_fill.Name = "slider_fill"
 				slider_fill.Parent = slider_bar
-				slider_fill.BackgroundColor3 = getgenv().color_scheme.enabled_color
+				slider_fill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 				slider_fill.Size = UDim2.new(0, 0, 1, 0)
 
 				UICorner_3.CornerRadius = UDim.new(0, 4)
@@ -604,9 +572,7 @@ function library.new_window(title_text)
 				end)
 
 				user_input_service.InputEnded:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						sliding = false
-					end
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end
 				end)
 			end
 
@@ -623,7 +589,7 @@ function library.new_window(title_text)
 
 				dropdown.Name = "dropdown"
 				dropdown.Parent = section
-				dropdown.BackgroundColor3 = getgenv().color_scheme.elements_color
+				dropdown.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 				dropdown.Size = UDim2.new(1, -20, 0, 30)
 				dropdown.ClipsDescendants = true
 
@@ -631,7 +597,7 @@ function library.new_window(title_text)
 				UICorner.Parent = dropdown
 
 				UIStroke.Parent = dropdown
-				UIStroke.Color = getgenv().color_scheme.misc_elements_color
+				UIStroke.Color = Color3.fromRGB(50, 50, 50)
 				UIStroke.Thickness = 1
 
 				title.Name = "title"
@@ -656,7 +622,7 @@ function library.new_window(title_text)
 
 				dropdown_content.Name = "dropdown_content"
 				dropdown_content.Parent = dropdown
-				dropdown_content.BackgroundColor3 = getgenv().color_scheme.dark_color
+				dropdown_content.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 				dropdown_content.Position = UDim2.new(0, 10, 0, 35)
 				dropdown_content.Size = UDim2.new(1, -20, 0, 0)
 				dropdown_content.Visible = false
@@ -689,7 +655,7 @@ function library.new_window(title_text)
 
 						button.Name = "button"
 						button.Parent = dropdown_content
-						button.BackgroundColor3 = getgenv().color_scheme.elements_color
+						button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 						button.Size = UDim2.new(1, -10, 0, 25)
 						button.Font = Enum.Font.SourceSansSemibold
 						button.Text = tostring(v)
@@ -730,7 +696,7 @@ function library.new_window(title_text)
 
 				dropdown.Name = "dropdown"
 				dropdown.Parent = section
-				dropdown.BackgroundColor3 = getgenv().color_scheme.elements_color
+				dropdown.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 				dropdown.Size = UDim2.new(1, -20, 0, 30)
 				dropdown.ClipsDescendants = true
 
@@ -738,7 +704,7 @@ function library.new_window(title_text)
 				UICorner.Parent = dropdown
 
 				UIStroke.Parent = dropdown
-				UIStroke.Color = getgenv().color_scheme.misc_elements_color
+				UIStroke.Color = Color3.fromRGB(50, 50, 50)
 				UIStroke.Thickness = 1
 
 				title.Name = "title"
@@ -763,7 +729,7 @@ function library.new_window(title_text)
 
 				dropdown_content.Name = "dropdown_content"
 				dropdown_content.Parent = dropdown
-				dropdown_content.BackgroundColor3 = getgenv().color_scheme.dark_color
+				dropdown_content.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 				dropdown_content.Position = UDim2.new(0, 10, 0, 35)
 				dropdown_content.Size = UDim2.new(1, -20, 0, 0)
 				dropdown_content.Visible = false
@@ -798,7 +764,7 @@ function library.new_window(title_text)
 
 						button.Name = "button"
 						button.Parent = dropdown_content
-						button.BackgroundColor3 = table.find(selected_elements, v) and getgenv().color_scheme.enabled_color or getgenv().color_scheme.elements_color
+						button.BackgroundColor3 = table.find(selected_elements, v) and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(35, 35, 35)
 						button.Size = UDim2.new(1, -10, 0, 25)
 						button.Font = Enum.Font.SourceSansSemibold
 						button.Text = tostring(v)
@@ -812,7 +778,10 @@ function library.new_window(title_text)
 							local index = table.find(selected_elements, v)
 							if index then
 								table.remove(selected_elements, index)
-								tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = getgenv().color_scheme.elements_color}):Play()
+								tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
+							else
+								table.insert(selected_elements, v)
+								tween_service:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Sine), {BackgroundColor3 = Color3.fromRGB(0, 150, 255)}):Play()
 							end
 							callback(selected_elements)
 						end)
@@ -836,4 +805,5 @@ function library.new_window(title_text)
 	return tabs_table
 end
 
-return library
+-- Automatically initialize and return a window instance matching user syntax
+return library.new_window("Main Menu")
