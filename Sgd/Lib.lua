@@ -3,7 +3,6 @@ local TweenService = game:GetService("TweenService")
 
 local Library = {}
 
--- Smooth Draggable Engine
 local function MakeDraggable(frame)
     local dragging, dragInput, dragStart, startPos
     frame.InputBegan:Connect(function(input)
@@ -28,7 +27,6 @@ local function MakeDraggable(frame)
     end)
 end
 
--- URL Execution Core
 function Library:ExecuteLink(url)
     if not url or url == "" then return end
     if string.find(url, "github.com") and not string.find(url, "raw.githubusercontent.com") then
@@ -47,13 +45,11 @@ function Library:ExecuteLink(url)
     end
 end
 
--- UI Window Factory
 function Library:CreateWindow(titleText)
     local ScreenGui = Instance.new("ScreenGui")
     if syn and syn.protect_gui then syn.protect_gui(ScreenGui) end
     ScreenGui.Parent = game:GetService("CoreGui")
     
-    -- Main Window Setup (Compact and clean)
     local MainFrame = Instance.new("Frame", ScreenGui)
     MainFrame.Size = UDim2.new(0, 260, 0, 320)
     MainFrame.Position = UDim2.new(0.5, -130, 0.5, -160)
@@ -62,7 +58,6 @@ function Library:CreateWindow(titleText)
     MakeDraggable(MainFrame)
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
     
-    -- Header Frame with specific 4px Top-Only Rounded Corners
     local HeaderFrame = Instance.new("Frame", MainFrame)
     HeaderFrame.Size = UDim2.new(1, 0, 0, 35)
     HeaderFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
@@ -71,7 +66,6 @@ function Library:CreateWindow(titleText)
     local HeaderCorner = Instance.new("UICorner", HeaderFrame)
     HeaderCorner.CornerRadius = UDim.new(0, 4)
     
-    -- Masking panel to flatten out bottom corners of the header
     local CornerMask = Instance.new("Frame", HeaderFrame)
     CornerMask.Size = UDim2.new(1, 0, 0, 4)
     CornerMask.Position = UDim2.new(0, 0, 1, -4)
@@ -87,10 +81,9 @@ function Library:CreateWindow(titleText)
     Title.Font = Enum.Font.SourceSansBold
     Title.TextSize = 14
     
-    -- Dynamic Container Structure (Fills cleanly, eliminates visual blank zones)
     local Container = Instance.new("ScrollingFrame", MainFrame)
-    Container.Size = UDim2.new(1, -12, 1, -43)
-    Container.Position = UDim2.new(0, 6, 0, 39)
+    Container.Size = UDim2.new(1, -12, 1, -45)
+    Container.Position = UDim2.new(0, 6, 0, 40)
     Container.BackgroundTransparency = 1
     Container.CanvasSize = UDim2.new(0, 0, 0, 0)
     Container.ScrollBarThickness = 2
@@ -101,7 +94,7 @@ function Library:CreateWindow(titleText)
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
     
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Container.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 5)
+        Container.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y)
     end)
     
     local Elements = {}
@@ -115,7 +108,6 @@ function Library:CreateWindow(titleText)
         Btn.Font = Enum.Font.SourceSans
         Btn.TextSize = 13
         Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
-        
         Btn.MouseButton1Click:Connect(callback)
     end
     
