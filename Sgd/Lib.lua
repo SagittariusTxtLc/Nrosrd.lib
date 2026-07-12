@@ -9,28 +9,38 @@ function Library:CreateWindow(titleText)
     ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    -- Main Frame (Centered exactly with instant execution, no animation)
+    -- Main Base Frame (Handles the 100x smooth outer border)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 290, 0, 246)
+    MainFrame.Size = UDim2.new(0, 290, 0, 252)
     MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
-    MainFrame.ClipsDescendants = true
+    MainFrame.ClipsDescendants = true -- Automatically forces inner elements to follow the 12px curve
     MainFrame.Parent = ScreenGui
 
     local MainCorner = Instance.new("UICorner")
     MainCorner.CornerRadius = UDim.new(0, 12)
     MainCorner.Parent = MainFrame
 
-    -- Header Frame (Light Black - inherits perfectly smooth top corners via ClipsDescendants)
+    -- Header Background Panel (Placed at the top, clipped cleanly by MainFrame)
+    local HeaderVisual = Instance.new("Frame")
+    HeaderVisual.Name = "HeaderVisual"
+    HeaderVisual.Size = UDim2.new(1, 0, 0, 42)
+    HeaderVisual.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    HeaderVisual.BorderSizePixel = 0
+    HeaderVisual.ZIndex = 1
+    HeaderVisual.Parent = MainFrame
+
+    -- Header Input/Interaction Frame (Transparent to block clipping artifacts)
     local HeaderFrame = Instance.new("Frame")
     HeaderFrame.Name = "HeaderFrame"
     HeaderFrame.Size = UDim2.new(1, 0, 0, 42)
-    HeaderFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    HeaderFrame.BackgroundTransparency = 1
     HeaderFrame.BorderSizePixel = 0
+    HeaderFrame.ZIndex = 2
     HeaderFrame.Parent = MainFrame
 
     local Title = Instance.new("TextLabel")
@@ -42,6 +52,7 @@ function Library:CreateWindow(titleText)
     Title.TextSize = 15
     Title.Font = Enum.Font.SourceSansBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.ZIndex = 3
     Title.Parent = HeaderFrame
 
     -- Scrolling Container
@@ -55,6 +66,7 @@ function Library:CreateWindow(titleText)
     Container.CanvasSize = UDim2.new(0, 0, 0, 0)
     Container.ScrollingDirection = Enum.ScrollingDirection.Y
     Container.ElasticBehavior = Enum.ElasticBehavior.Always
+    Container.ZIndex = 2
     Container.Parent = MainFrame
 
     local Layout = Instance.new("UIListLayout")
@@ -62,12 +74,11 @@ function Library:CreateWindow(titleText)
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
     Layout.Padding = UDim.new(0, 8)
 
-    -- Dynamic Canvas Sizing Manager
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         Container.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y)
     end)
 
-    -- Anti-Mistouch Dragging Engine (Locks to first input touch ID)
+    -- Anti-Mistouch Dragging
     local dragging = false
     local dragInput = nil
     local dragStart = nil
@@ -217,7 +228,6 @@ function Library:CreateWindow(titleText)
         SName.TextXAlignment = Enum.TextXAlignment.Left
         SName.Parent = SliderFrame
 
-        -- Expanded text value box width to ensure 3-digit values fit safely
         local Box = Instance.new("TextBox")
         Box.Size = UDim2.new(0, 46, 0, 18)
         Box.Position = UDim2.new(1, -46, 0, 2)
@@ -260,19 +270,16 @@ function Library:CreateWindow(titleText)
         DotCorner.CornerRadius = UDim.new(1, 0)
         DotCorner.Parent = Dot
 
-        -- Internal value updating equation with accurate boundary constraints
         local function updateSlider(percentage)
             percentage = math.clamp(percentage, 0, 1)
             local value = math.floor(min + (max - min) * percentage)
             Box.Text = tostring(value)
             
             Trail.Size = UDim2.new(percentage, 0, 1, 0)
-            -- Position calculations map cleanly within the track's inner width
-            Dot.Position = UDim2.new(0, (Track.AbsoluteSize.X * percentage) - 7, 0.5, -7)
+            Dot.Position = UDim2.new(percentage, -7, 0.5, -7)
             callback(value)
         end
 
-        -- Initial placement setup
         local initialRatio = (default - min) / (max - min)
         Dot.Position = UDim2.new(initialRatio, -7, 0.5, -7)
 
@@ -330,10 +337,12 @@ function Library:CreateWindow(titleText)
     function Elements:CreateDropdown(text, list, callback)
         list = list or {}
         callback = callback or function() end
+        local expanded = false
 
         local DropdownFrame = Instance.new("Frame")
         DropdownFrame.Size = UDim2.new(1, 0, 0, 54)
         DropdownFrame.BackgroundTransparency = 1
+        DropdownFrame.ClipsDescendants = true
         DropdownFrame.Parent = Container
 
         local DName = Instance.new("TextLabel")
@@ -378,13 +387,48 @@ function Library:CreateWindow(titleText)
         Symbol.Font = Enum.Font.SourceSansBold
         Symbol.Parent = Bar
 
-        -- Hidden dropdown mechanics simplified to fit clean layout architecture
-        Bar.MouseButton1Click:Connect(function()
-            if #list > 0 then
-                SelectedText.Text = tostring(list[1])
-                callback(list[1])
-            end
-        end)
+        local OptionsList = Instance.new("Frame")
+        OptionsList.Size = UDim2.new(1, 0, 0, #list * 30)
+        OptionsList.Position = UDim2.new(0, 0, 0, 56)
+        OptionsList.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
+        OptionsList.Parent = DropdownFrame
+
+        local OListCorner = Instance.new("UICorner")
+        OListCorner.CornerRadius = UDim.new(0, 6)
+        OListCorner.Parent = OptionsList
+
+        local OLayout = Instance.new("UIListLayout")
+        OLayout.Parent = OptionsList
+
+        local function toggleDropdown()
+            expanded = not expanded
+            local targetHeight = expanded and (56 + (#list * 30)) or 54
+            Symbol.Text = expanded and "-" or "v"
+            
+            DropdownFrame.Size = UDim2.new(1, 0, 0, targetHeight)
+            Container.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y)
+        end
+
+        for _, item in ipairs(list) do
+            local Opt = Instance.new("TextButton")
+            Opt.Size = UDim2.new(1, 0, 0, 30)
+            Opt.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
+            Opt.BackgroundTransparency = 1
+            Opt.Text = "  " .. tostring(item)
+            Opt.TextColor3 = Color3.fromRGB(200, 200, 200)
+            Opt.TextSize = 13
+            Opt.Font = Enum.Font.SourceSans
+            Opt.TextXAlignment = Enum.TextXAlignment.Left
+            Opt.Parent = OptionsList
+
+            Opt.MouseButton1Click:Connect(function()
+                SelectedText.Text = tostring(item)
+                toggleDropdown()
+                callback(item)
+            end)
+        end
+
+        Bar.MouseButton1Click:Connect(toggleDropdown)
     end
 
     return Elements
