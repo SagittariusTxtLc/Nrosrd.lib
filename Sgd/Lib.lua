@@ -1,4 +1,4 @@
--- UILib.lua - Educational UI Library
+-- UILib.lua - Educational UI Library (FIXED)
 local UILib = {}
 
 -- Services
@@ -106,6 +106,17 @@ CanvasLayout.Padding = UDim.new(0, 8)
 CanvasLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 CanvasLayout.Parent = ScrollingFrame
 
+-- Canvas Updater
+local function UpdateCanvas()
+    local count = 0
+    for _, child in pairs(ScrollingFrame:GetChildren()) do
+        if child:IsA("Frame") then
+            count = count + 1
+        end
+    end
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, count * 45 + 10)
+end
+
 -- Functions
 local function CreateElement(parent, type, props)
     local element = Instance.new(type)
@@ -118,11 +129,12 @@ end
 
 -- 🔘 BUTTON
 function UILib:Button(text, callback)
-    local ButtonFrame = Instance.new("Frame")
+    local ButtonFrame = Instance.new("TextButton") -- CHANGED TO TEXTBUTTON
     ButtonFrame.Size = UDim2.new(1, -10, 0, 35)
     ButtonFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     ButtonFrame.BackgroundTransparency = 0
-    ButtonFrame.BorderSizePixel = 0
+    BorderSizePixel = 0
+    ButtonFrame.Text = ""
     ButtonFrame.Parent = ScrollingFrame
     
     local Corner = Instance.new("UICorner")
@@ -158,6 +170,7 @@ function UILib:Button(text, callback)
         TweenService:Create(ButtonFrame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
     end)
     
+    UpdateCanvas()
     return ButtonFrame
 end
 
@@ -186,12 +199,13 @@ function UILib:Toggle(text, default, callback)
     Label.Parent = ToggleFrame
     
     -- Switch
-    local SwitchBg = Instance.new("Frame")
+    local SwitchBg = Instance.new("TextButton") -- CHANGED TO TEXTBUTTON
     SwitchBg.Size = UDim2.new(0, 40, 0, 20)
     SwitchBg.Position = UDim2.new(1, -50, 0.5, -10)
     SwitchBg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     SwitchBg.BackgroundTransparency = 0
     SwitchBg.BorderSizePixel = 0
+    SwitchBg.Text = ""
     SwitchBg.Parent = ToggleFrame
     
     local SwitchCorner = Instance.new("UICorner")
@@ -227,6 +241,7 @@ function UILib:Toggle(text, default, callback)
         callback(toggled)
     end)
     
+    UpdateCanvas()
     return ToggleFrame
 end
 
@@ -352,6 +367,7 @@ function UILib:Slider(name, min, max, default, callback)
         end
     end)
     
+    UpdateCanvas()
     return SliderFrame
 end
 
@@ -404,19 +420,17 @@ function UILib:DropDown(name, options, callback)
     local selected = nil
     
     local function UpdateHeight()
-        local count = DropContainer:GetChildren()
-        local height = 0
-        for _, child in pairs(count) do
-            if child:IsA("Frame") then
-                height = height + 37
+        local count = 0
+        for _, child in pairs(DropContainer:GetChildren()) do
+            if child:IsA("TextButton") then
+                count = count + 1
             end
         end
-        local targetSize = expanded and UDim2.new(1, 0, 0, height) or UDim2.new(1, 0, 0, 0)
+        local targetSize = expanded and UDim2.new(1, 0, 0, count * 37) or UDim2.new(1, 0, 0, 0)
         TweenService:Create(DropContainer, TweenInfo.new(0.3), {Size = targetSize}):Play()
         ToggleBtn.Text = expanded and "−" or "v"
-        -- Update canvas
         task.wait(0.35)
-        ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, ScrollingFrame:GetChildren()[ScrollingFrame:GetChildren().Name ~= "UIListLayout" and #ScrollingFrame:GetChildren() or 0] * 45)
+        UpdateCanvas()
     end
     
     for _, option in pairs(options) do
@@ -449,6 +463,7 @@ function UILib:DropDown(name, options, callback)
         UpdateHeight()
     end)
     
+    UpdateCanvas()
     return DropFrame
 end
 
