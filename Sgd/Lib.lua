@@ -47,22 +47,38 @@ function Library:ExecuteLink(url)
     end
 end
 
+-- Helper function to generate standardized item containers
+local function CreateItemContainer(parent, height)
+    local ContainerFrame = Instance.new("Frame", parent)
+    ContainerFrame.Size = UDim2.new(1, 0, 0, height)
+    ContainerFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Dark Gray Item Background
+    ContainerFrame.BorderSizePixel = 0
+    
+    local Corner = Instance.new("UICorner", ContainerFrame)
+    Corner.CornerRadius = UDim.new(0, 4)
+    
+    local Stroke = Instance.new("UIStroke", ContainerFrame)
+    Stroke.Thickness = 1
+    Stroke.Color = Color3.fromRGB(45, 45, 45) -- Smooth Outline Border
+    Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    
+    return ContainerFrame
+end
+
 -- UI Window Factory
 function Library:CreateWindow(titleText)
     local ScreenGui = Instance.new("ScreenGui")
     if syn and syn.protect_gui then syn.protect_gui(ScreenGui) end
     ScreenGui.Parent = game:GetService("CoreGui")
     
-    -- Main Frame (Starts compact, automatically expands downward per element)
     local MainFrame = Instance.new("Frame", ScreenGui)
-    MainFrame.Size = UDim2.new(0, 260, 0, 45) -- Base height with just header
+    MainFrame.Size = UDim2.new(0, 260, 0, 45)
     MainFrame.Position = UDim2.new(0.5, -130, 0.5, -160)
     MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
     MainFrame.BorderSizePixel = 0
     MakeDraggable(MainFrame)
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
     
-    -- Header Frame with 4px Top-Only Rounded Corners
     local HeaderFrame = Instance.new("Frame", MainFrame)
     HeaderFrame.Size = UDim2.new(1, 0, 0, 35)
     HeaderFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
@@ -71,7 +87,6 @@ function Library:CreateWindow(titleText)
     local HeaderCorner = Instance.new("UICorner", HeaderFrame)
     HeaderCorner.CornerRadius = UDim.new(0, 4)
     
-    -- Masking panel to flatten bottom corners of the header
     local CornerMask = Instance.new("Frame", HeaderFrame)
     CornerMask.Size = UDim2.new(1, 0, 0, 4)
     CornerMask.Position = UDim2.new(0, 0, 1, -4)
@@ -87,82 +102,80 @@ function Library:CreateWindow(titleText)
     Title.Font = Enum.Font.SourceSansBold
     Title.TextSize = 14
     
-    -- Container Frame (Clips tightly to content size)
     local Container = Instance.new("Frame", MainFrame)
-    Container.Size = UDim2.new(1, -12, 1, -45)
-    Container.Position = UDim2.new(0, 6, 0, 40)
+    Container.Size = UDim2.new(1, -16, 1, -45)
+    Container.Position = UDim2.new(0, 8, 0, 42)
     Container.BackgroundTransparency = 1
     
     local Layout = Instance.new("UIListLayout", Container)
-    Layout.Padding = UDim.new(0, 5)
+    Layout.Padding = UDim.new(0, 6)
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
     
-    -- THE FIX: Dynamically resizes the entire main GUI window so there are zero empty spaces at the bottom
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         local contentHeight = Layout.AbsoluteContentSize.Y
-        Container.Size = UDim2.new(1, -12, 0, contentHeight)
-        MainFrame.Size = UDim2.new(0, 260, 0, contentHeight + 48)
+        Container.Size = UDim2.new(1, 0, 0, contentHeight)
+        MainFrame.Size = UDim2.new(0, 260, 0, contentHeight + 50)
     end)
     
     local Elements = {}
     
     function Elements:Button(text, callback)
-        local Btn = Instance.new("TextButton", Container)
-        Btn.Size = UDim2.new(1, 0, 0, 28)
-        Btn.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
-        Btn.TextColor3 = Color3.fromRGB(225, 225, 225)
+        local Item = CreateItemContainer(Container, 30)
+        
+        local Btn = Instance.new("TextButton", Item)
+        Btn.Size = UDim2.new(1, 0, 1, 0)
+        Btn.BackgroundTransparency = 1
+        Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
         Btn.Text = text
         Btn.Font = Enum.Font.SourceSans
         Btn.TextSize = 13
-        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
+        
         Btn.MouseButton1Click:Connect(callback)
     end
     
     function Elements:Toggle(text, default, callback)
         local Enabled = default or false
-        local TglFrame = Instance.new("TextButton", Container)
-        TglFrame.Size = UDim2.new(1, 0, 0, 28)
-        TglFrame.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
-        TglFrame.Text = "  " .. text
-        TglFrame.TextColor3 = Color3.fromRGB(225, 225, 225)
-        TglFrame.Font = Enum.Font.SourceSans
-        TglFrame.TextSize = 13
-        TglFrame.TextXAlignment = Enum.TextXAlignment.Left
-        Instance.new("UICorner", TglFrame).CornerRadius = UDim.new(0, 4)
+        local Item = CreateItemContainer(Container, 30)
         
-        local Indicator = Instance.new("Frame", TglFrame)
+        local TglBtn = Instance.new("TextButton", Item)
+        TglBtn.Size = UDim2.new(1, 0, 1, 0)
+        TglBtn.BackgroundTransparency = 1
+        TglBtn.Text = "  " .. text
+        TglBtn.TextColor3 = Color3.fromRGB(230, 230, 230)
+        TglBtn.Font = Enum.Font.SourceSans
+        TglBtn.TextSize = 13
+        TglBtn.TextXAlignment = Enum.TextXAlignment.Left
+        
+        local Indicator = Instance.new("Frame", Item)
         Indicator.Size = UDim2.new(0, 12, 0, 12)
-        Indicator.Position = UDim2.new(1, -18, 0, 8)
-        Indicator.BackgroundColor3 = Enabled and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(50, 50, 50)
+        Indicator.Position = UDim2.new(1, -20, 0, 9)
+        Indicator.BackgroundColor3 = Enabled and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(60, 60, 60)
         Instance.new("UICorner", Indicator).CornerRadius = UDim.new(0, 3)
         
-        TglFrame.MouseButton1Click:Connect(function()
+        TglBtn.MouseButton1Click:Connect(function()
             Enabled = not Enabled
-            TweenService:Create(Indicator, TweenInfo.new(0.08), {BackgroundColor3 = Enabled and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(50, 50, 50)}):Play()
+            TweenService:Create(Indicator, TweenInfo.new(0.08), {BackgroundColor3 = Enabled and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(60, 60, 60)}):Play()
             callback(Enabled)
         end)
     end
     
     function Elements:Slider(text, min, max, default, callback)
-        local SliderFrame = Instance.new("Frame", Container)
-        SliderFrame.Size = UDim2.new(1, 0, 0, 38)
-        SliderFrame.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
-        Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 4)
+        local Item = CreateItemContainer(Container, 40)
         
-        local Label = Instance.new("TextLabel", SliderFrame)
-        Label.Size = UDim2.new(1, -10, 0, 16)
-        Label.Position = UDim2.new(0, 6, 0, 2)
+        local Label = Instance.new("TextLabel", Item)
+        Label.Size = UDim2.new(1, -12, 0, 18)
+        Label.Position = UDim2.new(0, 8, 0, 2)
         Label.BackgroundTransparency = 1
         Label.Text = text .. ": " .. default
-        Label.TextColor3 = Color3.fromRGB(215, 215, 215)
+        Label.TextColor3 = Color3.fromRGB(220, 220, 220)
         Label.TextXAlignment = Enum.TextXAlignment.Left
         Label.Font = Enum.Font.SourceSans
         Label.TextSize = 12
         
-        local Track = Instance.new("TextButton", SliderFrame)
-        Track.Size = UDim2.new(1, -12, 0, 4)
-        Track.Position = UDim2.new(0, 6, 0, 26)
-        Track.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        local Track = Instance.new("TextButton", Item)
+        Track.Size = UDim2.new(1, -16, 0, 4)
+        Track.Position = UDim2.new(0, 8, 0, 26)
+        Track.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
         Track.Text = ""
         Instance.new("UICorner", Track)
         
@@ -192,16 +205,18 @@ function Library:CreateWindow(titleText)
     end
     
     function Elements:TextBox(placeholder, callback)
-        local Box = Instance.new("TextBox", Container)
-        Box.Size = UDim2.new(1, 0, 0, 28)
-        Box.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
-        Box.TextColor3 = Color3.fromRGB(230, 230, 230)
+        local Item = CreateItemContainer(Container, 30)
+        
+        local Box = Instance.new("TextBox", Item)
+        Box.Size = UDim2.new(1, -10, 1, 0)
+        Box.Position = UDim2.new(0, 5, 0, 0)
+        Box.BackgroundTransparency = 1
+        Box.TextColor3 = Color3.fromRGB(235, 235, 235)
         Box.PlaceholderText = placeholder
-        Box.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
+        Box.PlaceholderColor3 = Color3.fromRGB(110, 110, 110)
         Box.Text = ""
         Box.Font = Enum.Font.SourceSans
         Box.TextSize = 13
-        Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
         
         Box.FocusLost:Connect(function(enterPressed)
             callback(Box.Text, enterPressed)
@@ -210,51 +225,64 @@ function Library:CreateWindow(titleText)
     
     function Elements:Dropdown(text, options, callback)
         local Expanded = false
-        local DropFrame = Instance.new("Frame", Container)
-        DropFrame.Size = UDim2.new(1, 0, 0, 28)
-        DropFrame.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
-        DropFrame.ClipsDescendants = true
-        Instance.new("UICorner", DropFrame).CornerRadius = UDim.new(0, 4)
+        local Item = CreateItemContainer(Container, 30)
+        Item.ClipsDescendants = true
         
-        local MainBtn = Instance.new("TextButton", DropFrame)
-        MainBtn.Size = UDim2.new(1, 0, 0, 28)
+        local MainBtn = Instance.new("TextButton", Item)
+        MainBtn.Size = UDim2.new(1, 0, 0, 30)
         MainBtn.BackgroundTransparency = 1
         MainBtn.Text = "  " .. text
-        MainBtn.TextColor3 = Color3.fromRGB(225, 225, 225)
+        MainBtn.TextColor3 = Color3.fromRGB(230, 230, 230)
         MainBtn.TextXAlignment = Enum.TextXAlignment.Left
         MainBtn.Font = Enum.Font.SourceSans
         MainBtn.TextSize = 13
         
-        local OptList = Instance.new("Frame", DropFrame)
-        OptList.Size = UDim2.new(1, 0, 1, -28)
-        OptList.Position = UDim2.new(0, 0, 0, 28)
+        local OptList = Instance.new("Frame", Item)
+        OptList.Size = UDim2.new(1, -12, 1, -34)
+        OptList.Position = UDim2.new(0, 6, 0, 32)
         OptList.BackgroundTransparency = 1
         
         local OptLayout = Instance.new("UIListLayout", OptList)
-        OptLayout.Padding = UDim.new(0, 2)
+        OptLayout.Padding = UDim.new(0, 3)
         
         for _, opt in ipairs(options) do
             local OptBtn = Instance.new("TextButton", OptList)
-            OptBtn.Size = UDim2.new(1, 0, 0, 24)
-            OptBtn.BackgroundColor3 = Color3.fromRGB(34, 34, 34)
+            OptBtn.Size = UDim2.new(1, 0, 0, 22)
+            OptBtn.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
             OptBtn.Text = opt
-            OptBtn.TextColor3 = Color3.fromRGB(195, 195, 195)
+            OptBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
             OptBtn.Font = Enum.Font.SourceSans
             OptBtn.TextSize = 12
             Instance.new("UICorner", OptBtn).CornerRadius = UDim.new(0, 3)
             
+            local OptStroke = Instance.new("UIStroke", OptBtn)
+            OptStroke.Thickness = 1
+            OptStroke.Color = Color3.fromRGB(50, 50, 50)
+            
             OptBtn.MouseButton1Click:Connect(function()
                 MainBtn.Text = "  " .. text .. " (" .. opt .. ")"
                 Expanded = false
-                TweenService:Create(DropFrame, TweenInfo.new(0.10), {Size = UDim2.new(1, 0, 0, 28)}):Play()
+                TweenService:Create(Item, TweenInfo.new(0.10), {Size = UDim2.new(1, 0, 0, 30)}):Play()
                 callback(opt)
             end)
         end
         
         MainBtn.MouseButton1Click:Connect(function()
             Expanded = not Expanded
-            local targetHeight = Expanded and (28 + (#options * 26)) or 28
-            TweenService:Create(DropFrame, TweenInfo.new(0.10), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+            local targetHeight = Expanded and (34 + (#options * 25)) or 30
+            TweenService:Create(Item, TweenInfo.new(0.10), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+            
+            -- Force container layout update instantly during layout adjustment animations
+            local tween = TweenService:Create(Item, TweenInfo.new(0.10), {Size = UDim2.new(1, 0, 0, targetHeight)})
+            tween:Play()
+            
+            task.spawn(function()
+                while tween.PlaybackState == Enum.PlaybackState.Playing do
+                    LayoutFrameSize = Item.Size -- simple read force layout tick trigger
+                    Layout:Fire("AbsoluteContentSize")
+                    task.wait()
+                end
+            end)
         end)
     end
 
