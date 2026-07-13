@@ -7,29 +7,27 @@ local Library = {}
 function Library:CreateWindow(windowTitle)
     windowTitle = windowTitle or "UI Library"
     
-    -- Main ScreenGui
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "CustomUILibrary"
     ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    -- FIXED: Optimized Main Window Dimensions (Adjusted height for element packing)
+    -- Adjusted size and set Active to true for perfect touch handling
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 480, 0, 320)
-    MainFrame.Position = UDim2.new(0.5, -240, 0.5, -160)
+    MainFrame.Size = UDim2.new(0, 460, 0, 320)
+    MainFrame.Position = UDim2.new(0.5, -230, 0.5, -160)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     MainFrame.BackgroundTransparency = 0.1
     MainFrame.BorderSizePixel = 0
     MainFrame.Active = true
     MainFrame.Parent = ScreenGui
 
-    -- REQUEST: 5x Smooth Rounded Border Corners
+    -- 5x Smooth Rounded Corners
     local MainCorner = Instance.new("UICorner")
     MainCorner.CornerRadius = UDim.new(0, 16)
     MainCorner.Parent = MainFrame
 
-    -- Header Frame
     local Header = Instance.new("Frame")
     Header.Name = "Header"
     Header.Size = UDim2.new(1, 0, 0, 42)
@@ -41,7 +39,6 @@ function Library:CreateWindow(windowTitle)
     HeaderCorner.CornerRadius = UDim.new(0, 16)
     HeaderCorner.Parent = Header
 
-    -- Seamless Header Connector Frame
     local HeaderHide = Instance.new("Frame")
     HeaderHide.Size = UDim2.new(1, 0, 0, 15)
     HeaderHide.Position = UDim2.new(0, 0, 1, -15)
@@ -60,7 +57,6 @@ function Library:CreateWindow(windowTitle)
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = Header
 
-    -- Container Scroll Window
     local Container = Instance.new("ScrollingFrame")
     Container.Name = "Container"
     Container.Size = UDim2.new(1, -24, 1, -60)
@@ -81,40 +77,39 @@ function Library:CreateWindow(windowTitle)
         Container.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 15)
     end)
 
-    -- FIXED: Draggable System Logic (Clean drag operations across mobile/PC touch)
-    local dragToggle = false
-    local dragStart = nil
-    local startPos = nil
+    -- Fixed Draggable System (Works smoothly on Delta/Mobile)
+    local dragging = false
+    local dragInput, dragStart, startPos
 
     Header.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragToggle = true
+            dragging = true
             dragStart = input.Position
             startPos = MainFrame.Position
             
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
-                    dragToggle = false
+                    dragging = false
                 end
             end)
         end
     end)
 
+    Header.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
     UIS.InputChanged:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragToggle then
+        if input == dragInput and dragging then
             local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(
-                startPos.X.Scale, 
-                startPos.X.Offset + delta.X, 
-                startPos.Y.Scale, 
-                startPos.Y.Offset + delta.Y
-            )
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 
     local Elements = {}
 
-    -- BUTTON
     function Elements:CreateButton(text, callback)
         callback = callback or function() end
         local ButtonFrame = Instance.new("TextButton")
@@ -152,7 +147,6 @@ function Library:CreateWindow(windowTitle)
         ButtonFrame.MouseButton1Click:Connect(function() callback() end)
     end
 
-    -- TOGGLE
     function Elements:CreateToggle(text, callback)
         callback = callback or function() end
         local toggled = false
@@ -208,7 +202,6 @@ function Library:CreateWindow(windowTitle)
         end)
     end
 
-    -- FIXED: Slider Bar Mechanics & Alignment Fix
     function Elements:CreateSlider(text, min, max, default, callback)
         min = min or 0 max = max or 100 default = default or min callback = callback or function() end
         
@@ -232,7 +225,6 @@ function Library:CreateWindow(windowTitle)
         SliderText.TextXAlignment = Enum.TextXAlignment.Left
         SliderText.Parent = SliderFrame
 
-        -- FIXED: Correct Alignment for Box Label
         local ValueBox = Instance.new("TextBox")
         ValueBox.Size = UDim2.new(0, 48, 0, 20)
         ValueBox.Position = UDim2.new(1, -60, 0, 6)
@@ -289,7 +281,6 @@ function Library:CreateWindow(windowTitle)
             callback(value)
         end
 
-        -- FIXED: Input Slider drag operations handling offset jumps
         local active = false
         
         local function checkInput(input)
@@ -328,7 +319,6 @@ function Library:CreateWindow(windowTitle)
         end)
     end
 
-    -- DROPDOWN
     function Elements:CreateDropdown(text, options, callback)
         options = options or {} callback = callback or function() end
         local open = false
