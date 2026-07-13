@@ -127,8 +127,8 @@ function Library:CreateWindow(windowTitle)
         ButtonText.BackgroundTransparency = 1
         ButtonText.Text = text
         ButtonText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        ButtonText.TextSize = 14
-        ButtonText.Font = Enum.Font.SourceSansMedium
+        ButtonText.TextSize = 15
+        ButtonText.Font = Enum.Font.SourceSans
         ButtonText.TextXAlignment = Enum.TextXAlignment.Left
         ButtonText.Parent = ButtonFrame
 
@@ -167,8 +167,8 @@ function Library:CreateWindow(windowTitle)
         ToggleText.BackgroundTransparency = 1
         ToggleText.Text = text
         ToggleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        ToggleText.TextSize = 14
-        ToggleText.Font = Enum.Font.SourceSansMedium
+        ToggleText.TextSize = 15
+        ToggleText.Font = Enum.Font.SourceSans
         ToggleText.TextXAlignment = Enum.TextXAlignment.Left
         ToggleText.Parent = ToggleFrame
 
@@ -228,8 +228,8 @@ function Library:CreateWindow(windowTitle)
         SliderText.BackgroundTransparency = 1
         SliderText.Text = text
         SliderText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        SliderText.TextSize = 14
-        SliderText.Font = Enum.Font.SourceSansMedium
+        SliderText.TextSize = 15
+        SliderText.Font = Enum.Font.SourceSans
         SliderText.TextXAlignment = Enum.TextXAlignment.Left
         SliderText.Parent = SliderFrame
 
@@ -347,8 +347,8 @@ function Library:CreateWindow(windowTitle)
         DropdownText.BackgroundTransparency = 1
         DropdownText.Text = text
         DropdownText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        DropdownText.TextSize = 14
-        DropdownText.Font = Enum.Font.SourceSansMedium
+        DropdownText.TextSize = 15
+        DropdownText.Font = Enum.Font.SourceSans
         DropdownText.TextXAlignment = Enum.TextXAlignment.Left
         DropdownText.Parent = DropdownContainer
 
