@@ -12,11 +12,11 @@ function Library:CreateWindow(windowTitle)
     ScreenGui.Parent = CoreGui
     ScreenGui.ResetOnSpawn = false
 
-    -- MAIN WINDOW FRAME (Sized cleanly to prevent extra spacing at bottom)
+    -- MAIN WINDOW FRAME
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 460, 0, 240) 
-    MainFrame.Position = UDim2.new(0.5, -230, 0.5, -120)
+    MainFrame.Size = UDim2.new(0, 480, 0, 260) -- Adjusted height for proper spacing
+    MainFrame.Position = UDim2.new(0.5, -240, 0.5, -130)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     MainFrame.BackgroundTransparency = 0.1
     MainFrame.BorderSizePixel = 0
@@ -27,48 +27,39 @@ function Library:CreateWindow(windowTitle)
     MainCorner.CornerRadius = UDim.new(0, 16)
     MainCorner.Parent = MainFrame
 
-    -- THICK HEADER FRAME
+    -- FULLY SMOOTH CAPSULE HEADER FRAME (All 4 corners perfectly rounded)
     local Header = Instance.new("Frame")
     Header.Name = "Header"
-    Header.Size = UDim2.new(1, 0, 0, 46) -- Increased thickness
+    Header.Size = UDim2.new(1, -20, 0, 42) -- Spaced beautifully inside the frame sides
+    Header.Position = UDim2.new(0, 10, 0, 10) -- Padding offset from top and left
     Header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     Header.BorderSizePixel = 0
     Header.Parent = MainFrame
 
     local HeaderCorner = Instance.new("UICorner")
-    HeaderCorner.CornerRadius = UDim.new(0, 16) -- High smoothness at the top
+    HeaderCorner.CornerRadius = UDim.new(0, 14) -- High smoothness around the whole capsule
     HeaderCorner.Parent = Header
-
-    -- FIXED: Seamless Connector (Fuses the bottom of header to the main body)
-    local HeaderHide = Instance.new("Frame")
-    HeaderHide.Size = UDim2.new(1, 0, 0, 20)
-    HeaderHide.Position = UDim2.new(0, 0, 1, -20)
-    HeaderHide.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    HeaderHide.BorderSizePixel = 0
-    HeaderHide.ZIndex = 1
-    HeaderHide.Parent = Header
 
     local Title = Instance.new("TextLabel")
     Title.Size = UDim2.new(1, -20, 1, 0)
-    Title.Position = UDim2.new(0, 16, 0, 0)
+    Title.Position = UDim2.new(0, 14, 0, 0)
     Title.BackgroundTransparency = 1
     Title.Text = windowTitle
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255) -- White Text
     Title.TextSize = 16
     Title.Font = Enum.Font.SourceSansBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.ZIndex = 2
     Title.Parent = Header
 
-    -- INNER SCROLLING CONTAINER
+    -- SCROLLING CONTAINER (White Scrollbar & Shifted Down to Clear Header Curves)
     local Container = Instance.new("ScrollingFrame")
     Container.Name = "Container"
-    Container.Size = UDim2.new(1, -24, 1, -60)
-    Container.Position = UDim2.new(0, 12, 0, 52)
+    Container.Size = UDim2.new(1, -24, 1, -74)
+    Container.Position = UDim2.new(0, 12, 0, 62) -- Shifted down to match smooth header style
     Container.BackgroundTransparency = 1
     Container.BorderSizePixel = 0
-    Container.ScrollBarThickness = 3
-    Container.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+    Container.ScrollBarThickness = 4
+    Container.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255) -- White Scrollbar
     Container.CanvasSize = UDim2.new(0, 0, 0, 0)
     Container.Parent = MainFrame
 
@@ -77,38 +68,36 @@ function Library:CreateWindow(windowTitle)
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
     Layout.Padding = UDim.new(0, 8)
 
+    -- Dynamic scrolling handler for 4+ items
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Container.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 5)
+        Container.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 8)
     end)
 
-    -- Smooth Draggable Setup
+    -- ANTI-MISTOUCH DRAGGABLE LOGIC (Locks to single initial finger touch pointer)
     local dragging = false
-    local dragInput, dragStart, startPos
+    local activeTouchInput = nil
+    local dragStart, startPos
 
     Header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if not dragging and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
             dragging = true
+            activeTouchInput = input -- Bind drag specifically to this active pointer input instance
             dragStart = input.Position
             startPos = MainFrame.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-
-    Header.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
         end
     end)
 
     UIS.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
+        if dragging and input == activeTouchInput then
             local delta = input.Position - dragStart
             MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    UIS.InputEnded:Connect(function(input)
+        if dragging and input == activeTouchInput then
+            dragging = false
+            activeTouchInput = nil
         end
     end)
 
@@ -118,7 +107,7 @@ function Library:CreateWindow(windowTitle)
     function Elements:CreateButton(text, callback)
         callback = callback or function() end
         local ButtonFrame = Instance.new("TextButton")
-        ButtonFrame.Size = UDim2.new(1, -6, 0, 36)
+        ButtonFrame.Size = UDim2.new(1, -6, 0, 38)
         ButtonFrame.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
         ButtonFrame.AutoButtonColor = true
         ButtonFrame.Text = ""
@@ -133,7 +122,7 @@ function Library:CreateWindow(windowTitle)
         ButtonText.Position = UDim2.new(0, 12, 0, 0)
         ButtonText.BackgroundTransparency = 1
         ButtonText.Text = text
-        ButtonText.TextColor3 = Color3.fromRGB(240, 240, 240)
+        ButtonText.TextColor3 = Color3.fromRGB(255, 255, 255) -- White Text
         ButtonText.TextSize = 14
         ButtonText.Font = Enum.Font.SourceSans
         ButtonText.TextXAlignment = Enum.TextXAlignment.Left
@@ -144,7 +133,7 @@ function Library:CreateWindow(windowTitle)
         Symbol.Position = UDim2.new(0.8, -12, 0, 0)
         Symbol.BackgroundTransparency = 1
         Symbol.Text = "➔"
-        Symbol.TextColor3 = Color3.fromRGB(140, 140, 140)
+        Symbol.TextColor3 = Color3.fromRGB(255, 255, 255) -- White Symbol
         Symbol.TextSize = 14
         Symbol.TextXAlignment = Enum.TextXAlignment.Right
         Symbol.Parent = ButtonFrame
@@ -158,7 +147,7 @@ function Library:CreateWindow(windowTitle)
         local toggled = false
 
         local ToggleFrame = Instance.new("Frame")
-        ToggleFrame.Size = UDim2.new(1, -6, 0, 36)
+        ToggleFrame.Size = UDim2.new(1, -6, 0, 38)
         ToggleFrame.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
         ToggleFrame.Parent = Container
 
@@ -171,7 +160,7 @@ function Library:CreateWindow(windowTitle)
         ToggleText.Position = UDim2.new(0, 12, 0, 0)
         ToggleText.BackgroundTransparency = 1
         ToggleText.Text = text
-        ToggleText.TextColor3 = Color3.fromRGB(240, 240, 240)
+        ToggleText.TextColor3 = Color3.fromRGB(255, 255, 255) -- White Text
         ToggleText.TextSize = 14
         ToggleText.Font = Enum.Font.SourceSans
         ToggleText.TextXAlignment = Enum.TextXAlignment.Left
@@ -226,7 +215,7 @@ function Library:CreateWindow(windowTitle)
         SliderText.Position = UDim2.new(0, 12, 0, 2)
         SliderText.BackgroundTransparency = 1
         SliderText.Text = text
-        SliderText.TextColor3 = Color3.fromRGB(240, 240, 240)
+        SliderText.TextColor3 = Color3.fromRGB(255, 255, 255) -- White Text
         SliderText.TextSize = 14
         SliderText.Font = Enum.Font.SourceSans
         SliderText.TextXAlignment = Enum.TextXAlignment.Left
@@ -237,7 +226,7 @@ function Library:CreateWindow(windowTitle)
         ValueBox.Position = UDim2.new(1, -58, 0, 5)
         ValueBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
         ValueBox.Text = tostring(default)
-        ValueBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+        ValueBox.TextColor3 = Color3.fromRGB(255, 255, 255) -- White Text
         ValueBox.TextSize = 12
         ValueBox.Font = Enum.Font.SourceSans
         ValueBox.ClearTextOnFocus = false
@@ -315,7 +304,7 @@ function Library:CreateWindow(windowTitle)
         end)
     end
 
-    -- DROPDOWN
+    -- DROPDOWN (With Solid Option Background Frame)
     function Elements:CreateDropdown(text, options, callback)
         options = options or {} callback = callback or function() end
         local open = false
@@ -331,7 +320,7 @@ function Library:CreateWindow(windowTitle)
         DropdownText.Position = UDim2.new(0, 4, 0, 0)
         DropdownText.BackgroundTransparency = 1
         DropdownText.Text = text
-        DropdownText.TextColor3 = Color3.fromRGB(160, 160, 160)
+        DropdownText.TextColor3 = Color3.fromRGB(255, 255, 255) -- White Text
         DropdownText.TextSize = 13
         DropdownText.Font = Enum.Font.SourceSans
         DropdownText.TextXAlignment = Enum.TextXAlignment.Left
@@ -353,7 +342,7 @@ function Library:CreateWindow(windowTitle)
         SelectedLabel.Position = UDim2.new(0, 12, 0, 0)
         SelectedLabel.BackgroundTransparency = 1
         SelectedLabel.Text = "Select an Option..."
-        SelectedLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+        SelectedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
         SelectedLabel.TextSize = 14
         SelectedLabel.Font = Enum.Font.SourceSans
         SelectedLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -364,11 +353,12 @@ function Library:CreateWindow(windowTitle)
         Indicator.Position = UDim2.new(0.8, -12, 0, 0)
         Indicator.BackgroundTransparency = 1
         Indicator.Text = "▼"
-        Indicator.TextColor3 = Color3.fromRGB(200, 200, 200)
+        Indicator.TextColor3 = Color3.fromRGB(255, 255, 255) -- White Arrow
         Indicator.TextSize = 11
         Indicator.TextXAlignment = Enum.TextXAlignment.Right
         Indicator.Parent = DropdownBar
 
+        -- SOLID DROPDOWN MENU BACKGROUND
         local OptionsFrame = Instance.new("Frame")
         OptionsFrame.Position = UDim2.new(0, 0, 0, 60)
         OptionsFrame.Size = UDim2.new(1, 0, 0, 0)
@@ -408,13 +398,14 @@ function Library:CreateWindow(windowTitle)
             OptButton.BackgroundTransparency = 1
             OptButton.Font = Enum.Font.SourceSans
             OptButton.Text = "   " .. tostring(optName)
-            OptButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+            OptButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- White Text Options
             OptButton.TextSize = 14
             OptButton.TextXAlignment = Enum.TextXAlignment.Left
             OptButton.Parent = OptionsFrame
 
             OptButton.MouseButton1Click:Connect(function()
                 SelectedLabel.Text = tostring(optName)
+                SelectedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
                 open = false
                 Indicator.Text = "▼"
                 refreshLayout()
