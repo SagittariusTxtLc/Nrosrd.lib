@@ -1,11 +1,10 @@
 -- Save this script to GitHub/Pastebin.
--- It returns a library creation function.
+-- Seamless & Connected Compact Roblox UI Library
 
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 
 local Library = {}
 
@@ -67,44 +66,55 @@ function Library:CreateWindow(titleText)
     -- Main Frame (Black & Smooth)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 400) -- Compact, fits nicely
-    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -200)
+    MainFrame.Size = UDim2.new(0, 300, 0, 360) -- Perfectly compact size
+    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -180)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     MainFrame.BorderSizePixel = 0
     MainFrame.Parent = ScreenGui
     AddCorner(MainFrame, 8)
 
-    -- Header (Smooth & Sleek)
+    -- Header (Perfectly connected to the top, sharing rounded corners)
     local Header = Instance.new("Frame")
     Header.Name = "Header"
-    Header.Size = UDim2.new(1, -12, 0, 35)
-    Header.Position = UDim2.new(0, 6, 0, 6)
-    Header.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Header.Size = UDim2.new(1, 0, 0, 38)
+    Header.Position = UDim2.new(0, 0, 0, 0)
+    Header.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
     Header.BorderSizePixel = 0
     Header.Parent = MainFrame
-    AddCorner(Header, 6)
+    AddCorner(Header, 8)
     MakeDraggable(Header, MainFrame)
 
+    -- Connector Frame (Hides the bottom rounded corners of the header to merge it smoothly)
+    local Connector = Instance.new("Frame")
+    Connector.Name = "Connector"
+    Connector.Size = UDim2.new(1, 0, 0, 10)
+    Connector.Position = UDim2.new(0, 0, 1, -10)
+    Connector.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+    Connector.BorderSizePixel = 0
+    Connector.ZIndex = 1
+    Connector.Parent = Header
+
     local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, -15, 1, 0)
-    Title.Position = UDim2.new(0, 10, 0, 0)
+    Title.Size = UDim2.new(1, -20, 1, 0)
+    Title.Position = UDim2.new(0, 12, 0, 0)
     Title.BackgroundTransparency = 1
     Title.Text = titleText or "UI Library"
     Title.TextColor3 = Color3.fromRGB(240, 240, 240)
     Title.Font = Enum.Font.SourceSansBold
-    Title.TextSize = 16
+    Title.TextSize = 15
     Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.ZIndex = 2
     Title.Parent = Header
 
     -- Scrollable Container for elements
     local Container = Instance.new("ScrollingFrame")
     Container.Name = "Container"
-    Container.Size = UDim2.new(1, -12, 1, -55)
-    Container.Position = UDim2.new(0, 6, 0, 47)
+    Container.Size = UDim2.new(1, -16, 1, -54)
+    Container.Position = UDim2.new(0, 8, 0, 46)
     Container.BackgroundTransparency = 1
     Container.BorderSizePixel = 0
     Container.ScrollBarThickness = 3
-    Container.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+    Container.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 60)
     Container.CanvasSize = UDim2.new(0, 0, 0, 0)
     Container.Parent = MainFrame
 
@@ -123,8 +133,8 @@ function Library:CreateWindow(titleText)
     -- 1. BUTTON
     function Elements:CreateButton(text, callback)
         local ButtonFrame = Instance.new("TextButton")
-        ButtonFrame.Size = UDim2.new(1, 0, 0, 35)
-        ButtonFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        ButtonFrame.Size = UDim2.new(1, 0, 0, 34)
+        ButtonFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
         ButtonFrame.AutoButtonColor = false
         ButtonFrame.BorderSizePixel = 0
         ButtonFrame.Text = ""
@@ -138,7 +148,7 @@ function Library:CreateWindow(titleText)
         Label.Text = text
         Label.TextColor3 = Color3.fromRGB(220, 220, 220)
         Label.Font = Enum.Font.SourceSansMedium
-        Label.TextSize = 15
+        Label.TextSize = 14
         Label.TextXAlignment = Enum.TextXAlignment.Left
         Label.Parent = ButtonFrame
 
@@ -147,17 +157,16 @@ function Library:CreateWindow(titleText)
         Symbol.Position = UDim2.new(0.8, 0, 0, 0)
         Symbol.BackgroundTransparency = 1
         Symbol.Text = "➔"
-        Symbol.TextColor3 = Color3.fromRGB(150, 150, 150)
+        Symbol.TextColor3 = Color3.fromRGB(140, 140, 140)
         Symbol.Font = Enum.Font.SourceSansBold
-        Symbol.TextSize = 14
+        Symbol.TextSize = 13
         Symbol.TextXAlignment = Enum.TextXAlignment.Right
         Symbol.Parent = ButtonFrame
 
         ButtonFrame.MouseButton1Click:Connect(function()
-            -- Pop effect
-            TweenService:Create(ButtonFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
-            task.wait(0.1)
-            TweenService:Create(ButtonFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(25, 25, 25)}):Play()
+            TweenService:Create(ButtonFrame, TweenInfo.new(0.08), {BackgroundColor3 = Color3.fromRGB(34, 34, 34)}):Play()
+            task.wait(0.08)
+            TweenService:Create(ButtonFrame, TweenInfo.new(0.08), {BackgroundColor3 = Color3.fromRGB(24, 24, 24)}):Play()
             callback()
         end)
     end
@@ -167,8 +176,8 @@ function Library:CreateWindow(titleText)
         local toggled = default or false
 
         local ToggleFrame = Instance.new("TextButton")
-        ToggleFrame.Size = UDim2.new(1, 0, 0, 35)
-        ToggleFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        ToggleFrame.Size = UDim2.new(1, 0, 0, 34)
+        ToggleFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
         ToggleFrame.AutoButtonColor = false
         ToggleFrame.BorderSizePixel = 0
         ToggleFrame.Text = ""
@@ -182,34 +191,34 @@ function Library:CreateWindow(titleText)
         Label.Text = text
         Label.TextColor3 = Color3.fromRGB(220, 220, 220)
         Label.Font = Enum.Font.SourceSansMedium
-        Label.TextSize = 15
+        Label.TextSize = 14
         Label.TextXAlignment = Enum.TextXAlignment.Left
         Label.Parent = ToggleFrame
 
-        -- Switch (The Toggle Track)
+        -- Switch Track
         local Switch = Instance.new("Frame")
-        Switch.Size = UDim2.new(0, 36, 0, 20)
-        Switch.Position = UDim2.new(1, -46, 0.5, -10)
-        Switch.BackgroundColor3 = toggled and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(60, 60, 60)
+        Switch.Size = UDim2.new(0, 34, 0, 18)
+        Switch.Position = UDim2.new(1, -44, 0.5, -9)
+        Switch.BackgroundColor3 = toggled and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(55, 55, 55)
         Switch.BorderSizePixel = 0
         Switch.Parent = ToggleFrame
-        AddCorner(Switch, 10)
+        AddCorner(Switch, 9)
 
         -- Switch Slider Dot
         local SliderCircle = Instance.new("Frame")
-        SliderCircle.Size = UDim2.new(0, 14, 0, 14)
-        SliderCircle.Position = toggled and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+        SliderCircle.Size = UDim2.new(0, 12, 0, 12)
+        SliderCircle.Position = toggled and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
         SliderCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         SliderCircle.BorderSizePixel = 0
         SliderCircle.Parent = Switch
-        AddCorner(SliderCircle, 7)
+        AddCorner(SliderCircle, 6)
 
         local function updateToggle()
-            local targetSwitchColor = toggled and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(60, 60, 60)
-            local targetCirclePos = toggled and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+            local targetSwitchColor = toggled and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(55, 55, 55)
+            local targetCirclePos = toggled and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
             
-            TweenService:Create(Switch, TweenInfo.new(0.15), {BackgroundColor3 = targetSwitchColor}):Play()
-            TweenService:Create(SliderCircle, TweenInfo.new(0.15), {Position = targetCirclePos}):Play()
+            TweenService:Create(Switch, TweenInfo.new(0.12), {BackgroundColor3 = targetSwitchColor}):Play()
+            TweenService:Create(SliderCircle, TweenInfo.new(0.12), {Position = targetCirclePos}):Play()
             callback(toggled)
         end
 
@@ -224,33 +233,33 @@ function Library:CreateWindow(titleText)
         local SliderValue = math.clamp(default or min, min, max)
 
         local SliderFrame = Instance.new("Frame")
-        SliderFrame.Size = UDim2.new(1, 0, 0, 50)
-        SliderFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        SliderFrame.Size = UDim2.new(1, 0, 0, 48)
+        SliderFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
         SliderFrame.BorderSizePixel = 0
         SliderFrame.Parent = Container
         AddCorner(SliderFrame, 6)
 
         local Label = Instance.new("TextLabel")
-        Label.Size = UDim2.new(0.6, 0, 0, 25)
-        Label.Position = UDim2.new(0, 10, 0, 2)
+        Label.Size = UDim2.new(0.6, 0, 0, 22)
+        Label.Position = UDim2.new(0, 10, 0, 4)
         Label.BackgroundTransparency = 1
         Label.Text = text
         Label.TextColor3 = Color3.fromRGB(220, 220, 220)
         Label.Font = Enum.Font.SourceSansMedium
-        Label.TextSize = 14
+        Label.TextSize = 13
         Label.TextXAlignment = Enum.TextXAlignment.Left
         Label.Parent = SliderFrame
 
-        -- Slider Value Box (Gray background, smooth borders, clickable)
+        -- Slider Value Box (Gray, smooth, clickable)
         local ValueButton = Instance.new("TextBox")
-        ValueButton.Size = UDim2.new(0, 45, 0, 18)
-        ValueButton.Position = UDim2.new(1, -55, 0, 5)
+        ValueButton.Size = UDim2.new(0, 40, 0, 18)
+        ValueButton.Position = UDim2.new(1, -50, 0, 4)
         ValueButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
         ValueButton.BorderSizePixel = 0
         ValueButton.Text = tostring(SliderValue)
         ValueButton.TextColor3 = Color3.fromRGB(255, 255, 255)
         ValueButton.Font = Enum.Font.SourceSansBold
-        ValueButton.TextSize = 12
+        ValueButton.TextSize = 11
         ValueButton.ClipsDescendants = true
         ValueButton.Parent = SliderFrame
         AddCorner(ValueButton, 4)
@@ -276,12 +285,12 @@ function Library:CreateWindow(titleText)
 
         -- Slider Dot/Handle
         local SliderDot = Instance.new("Frame")
-        SliderDot.Size = UDim2.new(0, 12, 0, 12)
-        SliderDot.Position = UDim2.new(0, -6, 0.5, -6)
+        SliderDot.Size = UDim2.new(0, 10, 0, 10)
+        SliderDot.Position = UDim2.new(0, -5, 0.5, -5)
         SliderDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         SliderDot.BorderSizePixel = 0
         SliderDot.Parent = SlideBar
-        AddCorner(SliderDot, 6)
+        AddCorner(SliderDot, 5)
 
         local isDragging = false
 
@@ -290,7 +299,7 @@ function Library:CreateWindow(titleText)
             SliderValue = math.floor(min + ((max - min) * percentage))
             
             SlideTrail.Size = UDim2.new(percentage, 0, 1, 0)
-            SliderDot.Position = UDim2.new(percentage, -6, 0.5, -6)
+            SliderDot.Position = UDim2.new(percentage, -5, 0.5, -5)
             ValueButton.Text = tostring(SliderValue)
             
             callback(SliderValue)
@@ -323,7 +332,6 @@ function Library:CreateWindow(titleText)
             end
         end)
 
-        -- Allow editing directly via the number textbox
         ValueButton.FocusLost:Connect(function()
             local num = tonumber(ValueButton.Text)
             if num then
@@ -335,7 +343,6 @@ function Library:CreateWindow(titleText)
             end
         end)
 
-        -- Initialize Default Value
         local startPercent = (SliderValue - min) / (max - min)
         updateSlider(startPercent)
     end
@@ -343,21 +350,20 @@ function Library:CreateWindow(titleText)
     -- 4. DROP-DOWN
     function Elements:CreateDropdown(text, list, callback)
         local isOpened = false
-        local dropdownSizeY = 35
-        local itemHeight = 30
-        local totalMaxHeight = 150 -- Compact dropdown constraint
+        local dropdownSizeY = 34
+        local itemHeight = 28
+        local totalMaxHeight = 135
 
         local DropdownFrame = Instance.new("Frame")
         DropdownFrame.Size = UDim2.new(1, 0, 0, dropdownSizeY)
-        DropdownFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        DropdownFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
         DropdownFrame.BorderSizePixel = 0
         DropdownFrame.ClipsDescendants = true
         DropdownFrame.Parent = Container
         AddCorner(DropdownFrame, 6)
 
-        -- Interactive Bar
         local DropdownBar = Instance.new("TextButton")
-        DropdownBar.Size = UDim2.new(1, 0, 0, 35)
+        DropdownBar.Size = UDim2.new(1, 0, 0, 34)
         DropdownBar.BackgroundTransparency = 1
         DropdownBar.Text = ""
         DropdownBar.Parent = DropdownFrame
@@ -369,7 +375,7 @@ function Library:CreateWindow(titleText)
         Label.Text = text
         Label.TextColor3 = Color3.fromRGB(220, 220, 220)
         Label.Font = Enum.Font.SourceSansMedium
-        Label.TextSize = 14
+        Label.TextSize = 13
         Label.TextXAlignment = Enum.TextXAlignment.Left
         Label.Parent = DropdownBar
 
@@ -378,16 +384,15 @@ function Library:CreateWindow(titleText)
         Indicator.Position = UDim2.new(0.8, 0, 0, 0)
         Indicator.BackgroundTransparency = 1
         Indicator.Text = "v"
-        Indicator.TextColor3 = Color3.fromRGB(150, 150, 150)
+        Indicator.TextColor3 = Color3.fromRGB(140, 140, 140)
         Indicator.Font = Enum.Font.SourceSansBold
-        Indicator.TextSize = 14
+        Indicator.TextSize = 13
         Indicator.TextXAlignment = Enum.TextXAlignment.Right
         Indicator.Parent = DropdownBar
 
-        -- Container inside dropdown for options
         local OptionScroll = Instance.new("ScrollingFrame")
-        OptionScroll.Size = UDim2.new(1, -10, 1, -35)
-        OptionScroll.Position = UDim2.new(0, 5, 0, 35)
+        OptionScroll.Size = UDim2.new(1, -10, 1, -34)
+        OptionScroll.Position = UDim2.new(0, 5, 0, 34)
         OptionScroll.BackgroundTransparency = 1
         OptionScroll.BorderSizePixel = 0
         OptionScroll.ScrollBarThickness = 2
@@ -401,24 +406,22 @@ function Library:CreateWindow(titleText)
 
         local function toggleDropdown()
             isOpened = not isOpened
-            local targetHeight = 35
+            local targetHeight = 34
             local targetSymbol = "v"
 
             if isOpened then
-                local calculatedHeight = 35 + (#list * itemHeight) + 5
-                targetHeight = math.clamp(calculatedHeight, 35, totalMaxHeight)
+                local calculatedHeight = 34 + (#list * itemHeight) + 4
+                targetHeight = math.clamp(calculatedHeight, 34, totalMaxHeight)
                 targetSymbol = "-"
             end
 
-            -- Smooth Animations
-            TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            TweenService:Create(DropdownFrame, TweenInfo.new(0.18, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 Size = UDim2.new(1, 0, 0, targetHeight)
             }):Play()
 
             Indicator.Text = targetSymbol
             
-            -- Force layout refresh in main container
-            task.wait(0.2)
+            task.wait(0.18)
             Container.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
         end
 
@@ -427,12 +430,12 @@ function Library:CreateWindow(titleText)
         for i, optionName in ipairs(list) do
             local OptionButton = Instance.new("TextButton")
             OptionButton.Size = UDim2.new(1, 0, 0, itemHeight - 2)
-            OptionButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            OptionButton.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
             OptionButton.BorderSizePixel = 0
             OptionButton.Text = optionName
             OptionButton.TextColor3 = Color3.fromRGB(200, 200, 200)
             OptionButton.Font = Enum.Font.SourceSansMedium
-            OptionButton.TextSize = 13
+            OptionButton.TextSize = 12
             OptionButton.Parent = OptionScroll
             AddCorner(OptionButton, 4)
 
