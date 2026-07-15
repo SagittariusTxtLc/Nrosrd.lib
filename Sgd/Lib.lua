@@ -1,5 +1,5 @@
 -- Save this script to GitHub/Pastebin.
--- Fully Fixed, Connected, and Outlined Compact Roblox UI Library
+-- Complete, Fully-Functional Compact UI Library with Distinct Header Border
 
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -8,7 +8,7 @@ local Players = game:GetService("Players")
 
 local Library = {}
 
--- Utility to create smooth UI corners easily
+-- Helper function to add consistent round borders
 local function AddCorner(parent, radius)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, radius or 6)
@@ -16,18 +16,17 @@ local function AddCorner(parent, radius)
     return corner
 end
 
--- Utility to add a clean, smooth border outline
-local function AddStroke(parent, color, thickness, transparency)
+-- Helper function to apply distinct smooth borders
+local function AddStroke(parent, color, thickness)
     local stroke = Instance.new("UIStroke")
     stroke.Color = color or Color3.fromRGB(45, 45, 45)
     stroke.Thickness = thickness or 1
-    stroke.Transparency = transparency or 0
     stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     stroke.Parent = parent
     return stroke
 end
 
--- Utility to make elements draggable
+-- Handles smooth window dragging
 local function MakeDraggable(dragFrame, parentFrame)
     local dragging, dragInput, dragStart, startPos
     
@@ -65,7 +64,7 @@ local function MakeDraggable(dragFrame, parentFrame)
 end
 
 function Library:CreateWindow(titleText)
-    -- Protect against duplicate GUIs & safely check parent environments
+    -- Clean duplicate GUIs safely
     local targetParent = game:GetService("CoreGui")
     local oldGui = targetParent:FindFirstChild("Compact_Roblox_Lib")
     if oldGui then oldGui:Destroy() end
@@ -75,18 +74,18 @@ function Library:CreateWindow(titleText)
     ScreenGui.Parent = targetParent
     ScreenGui.ResetOnSpawn = false
 
-    -- Main Frame (Black & Smooth)
+    -- Main Base Frame (Black and smoothly rounded)
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 300, 0, 360) 
-    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -180)
+    MainFrame.Size = UDim2.new(0, 280, 0, 340) -- Compact, mobile-friendly size
+    MainFrame.Position = UDim2.new(0.5, -140, 0.5, -170)
     MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
     MainFrame.BorderSizePixel = 0
     MainFrame.Parent = ScreenGui
     AddCorner(MainFrame, 8)
-    AddStroke(MainFrame, Color3.fromRGB(35, 35, 35), 1) -- Base frame subtle border
+    AddStroke(MainFrame, Color3.fromRGB(35, 35, 35), 1)
 
-    -- Header (Perfectly connected to the top, with its own clean border)
+    -- Header Frame (Distinct smooth border around the Header GUI)
     local Header = Instance.new("Frame")
     Header.Name = "Header"
     Header.Size = UDim2.new(1, -12, 0, 36)
@@ -95,7 +94,7 @@ function Library:CreateWindow(titleText)
     Header.BorderSizePixel = 0
     Header.Parent = MainFrame
     AddCorner(Header, 6)
-    AddStroke(Header, Color3.fromRGB(50, 50, 50), 1) -- Smooth border around the Header
+    AddStroke(Header, Color3.fromRGB(55, 55, 55), 1) -- Sharp border around header
     MakeDraggable(Header, MainFrame)
 
     local Title = Instance.new("TextLabel")
@@ -109,17 +108,15 @@ function Library:CreateWindow(titleText)
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = Header
 
-    -- Scrollable Container for elements (Using Native Automatic Scaling to avoid bugs)
+    -- Main Container Frame (Holds elements, acts as scrolling view)
     local Container = Instance.new("ScrollingFrame")
     Container.Name = "Container"
-    Container.Size = UDim2.new(1, -12, 1, -56)
+    Container.Size = UDim2.new(1, -12, 1, -54)
     Container.Position = UDim2.new(0, 6, 0, 48)
     Container.BackgroundTransparency = 1
     Container.BorderSizePixel = 0
     Container.ScrollBarThickness = 2
     Container.ScrollBarImageColor3 = Color3.fromRGB(60, 60, 60)
-    Container.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y
-    Container.CanvasSize = UDim2.new(0, 0, 0, 0)
     Container.Parent = MainFrame
 
     local UIListLayout = Instance.new("UIListLayout")
@@ -127,6 +124,18 @@ function Library:CreateWindow(titleText)
     UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     UIListLayout.Padding = UDim.new(0, 6)
     UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    -- Bulletproof dynamic canvas size adjustment loop
+    local function adjustCanvasSize()
+        local height = 0
+        for _, child in ipairs(Container:GetChildren()) do
+            if child:IsA("GuiObject") and child ~= UIListLayout then
+                height = height + child.Size.Y.Offset + UIListLayout.Padding.Offset
+            end
+        end
+        Container.CanvasSize = UDim2.new(0, 0, 0, height + 10)
+    end
+    UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(adjustCanvasSize)
 
     local Elements = {}
 
@@ -170,6 +179,7 @@ function Library:CreateWindow(titleText)
             TweenService:Create(ButtonFrame, TweenInfo.new(0.08), {BackgroundColor3 = Color3.fromRGB(20, 20, 20)}):Play()
             callback()
         end)
+        adjustCanvasSize()
     end
 
     -- 2. TOGGLE
@@ -228,6 +238,7 @@ function Library:CreateWindow(titleText)
             toggled = not toggled
             updateToggle()
         end)
+        adjustCanvasSize()
     end
 
     -- 3. SLIDER
@@ -253,7 +264,7 @@ function Library:CreateWindow(titleText)
         Label.TextXAlignment = Enum.TextXAlignment.Left
         Label.Parent = SliderFrame
 
-        -- Slider Value Box (Gray, smooth, clickable)
+        -- Clickable and editable gray slider number
         local ValueButton = Instance.new("TextBox")
         ValueButton.Size = UDim2.new(0, 40, 0, 18)
         ValueButton.Position = UDim2.new(1, -50, 0, 4)
@@ -287,7 +298,7 @@ function Library:CreateWindow(titleText)
         SlideTrail.Parent = SlideBar
         AddCorner(SlideTrail, 2)
 
-        -- Slider Dot/Handle
+        -- Slider Dot
         local SliderDot = Instance.new("Frame")
         SliderDot.Size = UDim2.new(0, 10, 0, 10)
         SliderDot.Position = UDim2.new(0, -5, 0.5, -5)
@@ -349,6 +360,7 @@ function Library:CreateWindow(titleText)
 
         local startPercent = (SliderValue - min) / (max - min)
         updateSlider(startPercent)
+        adjustCanvasSize()
     end
 
     -- 4. DROP-DOWN
@@ -425,6 +437,9 @@ function Library:CreateWindow(titleText)
             }):Play()
 
             Indicator.Text = targetSymbol
+            
+            task.wait(0.18)
+            adjustCanvasSize()
         end
 
         DropdownBar.MouseButton1Click:Connect(toggleDropdown)
@@ -447,6 +462,7 @@ function Library:CreateWindow(titleText)
                 toggleDropdown()
             end)
         end
+        adjustCanvasSize()
     end
 
     return Elements
